@@ -66,29 +66,62 @@
 	);
 
 	const m = new Intl.NumberFormat(undefined, { style: 'unit', unit: 'minute' });
-    const H = new Intl.NumberFormat(undefined, { style: 'unit', unit: 'hour' });
-    const fmt = new Intl.ListFormat();
+	const H = new Intl.NumberFormat(undefined, { style: 'unit', unit: 'hour' });
+	const fmt = new Intl.ListFormat();
 
-    let duration = $derived(right ? Time.subtract(right.time, new Time(current_time.getHours(), current_time.getMinutes())) : undefined);
+	let duration = $derived(
+		right
+			? Time.subtract(right.time, new Time(current_time.getHours(), current_time.getMinutes()))
+			: undefined
+	);
 </script>
 
-<select bind:value={displayedTypeOfDay}>
-	{#each schedules as [prop]}
-		<option value={prop}>{prop}</option>
-	{/each}
-</select>
-{#if curSchedule}
-	<table class="prose">
-		<tbody>
-			{#each curSchedule as { name, start, end }}
-				<tr>
-					<td>{name}</td>
-					<td>{format(start)}-{format(end)}</td>
-				</tr>
-			{/each}
-		</tbody>
-	</table>
-{/if}
-{#if right && duration}
-	<span>{fmt.format([H.format(duration.hours),m.format(duration.minutes)])} until {right.name}</span>
-{/if}
+<svelte:head>
+	<title>Reagan HS Schedule</title>
+	<meta name="description" content="view and check the schedule" />
+</svelte:head>
+
+<div class="h-screen w-full snap-y snap-mandatory overflow-scroll">
+	<div class="flex h-full snap-center flex-col items-center justify-center bg-cyan-500">
+		<span class="font-mono text-6xl md:text-9xl">{current_time.toLocaleTimeString()}</span>
+		{#if right && duration}
+			<span class="text-lg md:text-3xl"
+				>{fmt.format([H.format(duration.hours), m.format(duration.minutes)])} until {right.name}</span
+			>
+		{/if}
+	</div>
+	<div
+		class="h-full snap-center max-md:flex max-md:flex-col max-md:items-center max-md:justify-center md:grid md:grid-cols-2"
+	>
+		<div class="flex flex-col items-center justify-center">
+			<span class="font-mono text-6xl">{current_time.toLocaleTimeString()}</span>
+			{#if right && duration}
+				<span class="md:text-xl"
+					>{fmt.format([H.format(duration.hours), m.format(duration.minutes)])} until {right.name}</span
+				>
+			{/if}
+		</div>
+		<div class="flex flex-col items-center justify-center">
+			<label class="contents">
+				View:
+				<select bind:value={displayedTypeOfDay}>
+					{#each schedules as [prop]}
+						<option value={prop}>{prop}</option>
+					{/each}
+				</select>
+			</label>
+			{#if curSchedule}
+				<table class="prose">
+					<tbody>
+						{#each curSchedule as { name, start, end }}
+							<tr>
+								<td>{name}</td>
+								<td>{format(start)}-{format(end)}</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
+			{/if}
+		</div>
+	</div>
+</div>
