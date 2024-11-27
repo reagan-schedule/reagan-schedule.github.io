@@ -20,8 +20,8 @@ export class Time {
 		minutes %= 60;
 		return { hours, minutes };
 	}
-	static add(left: Time, { hours, minutes }: {hours?: number, minutes?: number}) {
-		return new Time(left.hours+(hours??0),left.minutes+(minutes??0));
+	static add(left: Time, { hours, minutes }: { hours?: number; minutes?: number }) {
+		return new Time(left.hours + (hours ?? 0), left.minutes + (minutes ?? 0));
 	}
 }
 const fmt = new Intl.DateTimeFormat(undefined, { timeStyle: 'short' });
