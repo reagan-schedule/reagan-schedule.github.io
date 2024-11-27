@@ -101,7 +101,7 @@
 		</div>
 		<div class="flex flex-col items-center justify-center">
 			<label class="contents">
-				<select class="my-2 p-2" bind:value={displayedTypeOfDay}>
+				<select class="mb-2 p-2" bind:value={displayedTypeOfDay}>
 					{#each schedules as [prop]}
 						{#if localization.has(prop)}
 							<option value={prop}>{localization.get(prop)}</option>
