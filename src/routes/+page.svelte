@@ -38,9 +38,13 @@
 	]);
 
 	// svelte-ignore state_referenced_locally
-	let displayedTypeOfDay = $state(!localization.has(overrides(current_time)) ? 'regSchedule' : overrides(current_time));
+	let displayedTypeOfDay = $state(
+		!localization.has(overrides(current_time)) ? 'regSchedule' : overrides(current_time)
+	);
 	// hidden ones (nil for weekends) have precedence
-	let typeOfDay = $derived(!localization.has(overrides(current_time)) ?overrides(current_time) : displayedTypeOfDay);
+	let typeOfDay = $derived(
+		!localization.has(overrides(current_time)) ? overrides(current_time) : displayedTypeOfDay
+	);
 	let curSchedule = $derived(schedules.get(typeOfDay));
 	let displayedSchedule = $derived(schedules.get(displayedTypeOfDay));
 
@@ -97,7 +101,7 @@
 		</div>
 		<div class="flex flex-col items-center justify-center">
 			<label class="contents">
-				<select class="p-2 my-2" bind:value={displayedTypeOfDay}>
+				<select class="my-2 p-2" bind:value={displayedTypeOfDay}>
 					{#each schedules as [prop]}
 						{#if localization.has(prop)}
 							<option value={prop}>{localization.get(prop)}</option>
