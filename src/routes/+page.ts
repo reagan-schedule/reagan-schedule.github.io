@@ -16,15 +16,17 @@ import {
 } from './data';
 export const load: PageLoad = () => {
 	return {
-		schedules: Object.entries({
-			regSchedule,
-			strikeSchedule,
-			erSchedule,
-			sem1Schedule,
-			sem2Schedule,
-			sem3Schedule,
-			sem4Schedule
-		}),
+		schedules: new Map(
+			Object.entries({
+				regSchedule,
+				strikeSchedule,
+				erSchedule,
+				sem1Schedule,
+				sem2Schedule,
+				sem3Schedule,
+				sem4Schedule
+			})
+		),
 		erDates,
 		sem1Dates,
 		sem2Dates,

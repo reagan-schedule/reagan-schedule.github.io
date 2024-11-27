@@ -1,7 +1,7 @@
 //schedules
 // thanks william :)
 
-import { Time } from './Time';
+import { Time } from '../Time';
 
 type Dates = number[][];
 type Schedule = { name: string; id: string; start: Time; end: Time }[];
