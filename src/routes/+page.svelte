@@ -87,7 +87,7 @@
 	<div class="flex h-full snap-center flex-col items-center justify-center bg-cyan-500">
 		<span class="font-mono text-6xl md:text-9xl">{current_time.toLocaleTimeString()}</span>
 		{#if right}
-			<span class="text-lg md:text-3xl mt-3"><Status {right} {current_time} /></span>
+			<span class="mt-3 text-lg md:text-3xl"><Status {right} {current_time} /></span>
 		{/if}
 	</div>
 	<div
@@ -96,7 +96,7 @@
 		<div class="flex flex-col items-center justify-center">
 			<span class="font-mono text-6xl">{fmt.format(current_time)}</span>
 			{#if right}
-				<span class="md:text-xl mt-2"><Status {right} {current_time} /></span>
+				<span class="mt-2 md:text-xl"><Status {right} {current_time} /></span>
 			{/if}
 		</div>
 		<div class="flex flex-col items-center justify-center">
