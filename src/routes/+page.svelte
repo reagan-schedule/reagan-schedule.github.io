@@ -38,9 +38,13 @@
 	]);
 
 	// svelte-ignore state_referenced_locally
-	let displayedTypeOfDay = $state(!localization.has(overrides(current_time)) ? 'regSchedule' : overrides(current_time));
+	let displayedTypeOfDay = $state(
+		!localization.has(overrides(current_time)) ? 'regSchedule' : overrides(current_time)
+	);
 	// hidden ones (nil for weekends) have precedence
-	let typeOfDay = $derived(!localization.has(overrides(current_time)) ?overrides(current_time) : displayedTypeOfDay);
+	let typeOfDay = $derived(
+		!localization.has(overrides(current_time)) ? overrides(current_time) : displayedTypeOfDay
+	);
 	let curSchedule = $derived(schedules.get(typeOfDay));
 	let displayedSchedule = $derived(schedules.get(displayedTypeOfDay));
 
@@ -79,11 +83,11 @@
 	<meta name="description" content="view and check the schedule for Reagan HS" />
 </svelte:head>
 
-<div class="h-screen w-full snap-y snap-mandatory overflow-scroll">
+<div class="h-full w-full snap-y snap-mandatory overflow-scroll">
 	<div class="flex h-full snap-center flex-col items-center justify-center bg-cyan-500">
 		<span class="font-mono text-6xl md:text-9xl">{current_time.toLocaleTimeString()}</span>
 		{#if right}
-			<span class="text-lg md:text-3xl"><Status {right} {current_time} /></span>
+			<span class="text-lg md:text-3xl mt-3"><Status {right} {current_time} /></span>
 		{/if}
 	</div>
 	<div
@@ -92,7 +96,7 @@
 		<div class="flex flex-col items-center justify-center">
 			<span class="font-mono text-6xl">{fmt.format(current_time)}</span>
 			{#if right}
-				<span class="md:text-xl"><Status {right} {current_time} /></span>
+				<span class="md:text-xl mt-2"><Status {right} {current_time} /></span>
 			{/if}
 		</div>
 		<div class="flex flex-col items-center justify-center">
