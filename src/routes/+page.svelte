@@ -3,32 +3,43 @@
 	import {
 		Time,
 		format,
-		isSpecialDate,
+		matchDate,
 		toFlatTimeArray,
 		upperBound,
 		type DailyEvent,
-		type NamedTime,
 		type SpecialDate
 	} from '../utils';
 
-	let { data } = $props();
-	let { schedules } = data;
+	let {
+		data
+	}: {
+		data: {
+			dates: {
+				[x: string]: SpecialDate[];
+			};
+			schedules: {
+				[x: string]: DailyEvent[];
+			};
+			scheduleByWeek: string[];
+		};
+	} = $props();
+	let { schedules, dates } = data;
 
 	function getSchedule(current_time: Date) {
 		const schedule = (
 			[
-				['sem1Schedule', data.sem1Dates],
-				['sem2Schedule', data.sem2Dates],
-				['sem3Schedule', data.sem3Dates],
-				['sem4Schedule', data.sem4Dates],
-				['erSchedule', data.erDates]
+				['sem1Schedule', dates.sem1Dates],
+				['sem2Schedule', dates.sem2Dates],
+				['sem3Schedule', dates.sem3Dates],
+				['sem4Schedule', dates.sem4Dates],
+				['erSchedule', dates.erDates]
 			] satisfies [string, SpecialDate[]][]
-		).find(([_, dates]) => dates.some((date) => isSpecialDate(current_time, date)));
+		).find(([_, dates]) => dates.some((date) => matchDate(current_time, date)));
 
 		if (schedule) return schedule[0];
 
 		const daySchedule = data.scheduleByWeek[current_time.getDay()];
-		return !daySchedule ? 'regSchedule' : daySchedule;
+		return daySchedule || 'regSchedule';
 	}
 	let current_time = $state(new Date());
 	setInterval(() => {
@@ -52,24 +63,24 @@
 	let typeOfDay = $derived(
 		!localization.has(getSchedule(current_time)) ? getSchedule(current_time) : displayedTypeOfDay
 	);
-	let curSchedule = $derived(schedules.get(typeOfDay));
-	let displayedSchedule = $derived(schedules.get(displayedTypeOfDay));
+	let curSchedule = $derived(schedules[typeOfDay]);
+	let displayedSchedule = $derived(schedules[displayedTypeOfDay]);
 
 	let times = $derived(
 		(() => {
-			const times = toFlatTimeArray(curSchedule as DailyEvent[], {});
+			const times = toFlatTimeArray(curSchedule);
 			const next = new Date(current_time);
 			let i = 0;
 			do {
 				next.setDate(next.getDate() + 1);
 				i++;
 			} while (getSchedule(next) === 'nil');
-			const scheduleNext = schedules.get(getSchedule(next));
-			times?.push(...toFlatTimeArray(scheduleNext as DailyEvent[], { hours: 24 * i }));
+			const scheduleNext = schedules[getSchedule(next)];
+			times.push(...toFlatTimeArray(scheduleNext, { hours: 24 * i }));
 			return times;
 		})()
 	);
-	let right = $derived(upperBound(times as NamedTime[], Time.fromDate(current_time)));
+	let right = $derived(upperBound(times, Time.fromDate(current_time)));
 	const fmt = new Intl.DateTimeFormat(undefined, { timeStyle: 'medium' });
 </script>
 
@@ -105,7 +116,7 @@
 					class="mt-2 appearance-none rounded-full border-2 border-slate-200 bg-slate-100 px-8 py-2 text-center [text-align-last:_center]"
 					bind:value={displayedTypeOfDay}
 				>
-					{#each schedules as [prop]}
+					{#each Object.keys(schedules) as prop}
 						{#if localization.has(prop)}
 							<option value={prop}>{localization.get(prop)}</option>
 						{/if}

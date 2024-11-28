@@ -33,23 +33,28 @@ export function format(time: Time) {
 	nil.setHours(time.hours, time.minutes);
 	return fmt.format(nil);
 }
-export type SpecialDate = [number, number] | [number, number, number];
+export type SpecialDate =
+	| [month: number, date: number]
+	| [month: number, date: number, year: number];
 export type DailyEvent = { name: string; id: string; start: Time; end: Time };
 type RelativeTimeFormat = { hours?: number; minutes?: number };
-export type NamedTime = { time: Time, name: string };
-export function isSpecialDate(current_time: Date, specialDate: SpecialDate) {
+type NamedTime = { time: Time; name: string };
+export function matchDate(current_time: Date, specialDate: SpecialDate) {
 	return (
 		current_time.getMonth() === specialDate[0] &&
 		current_time.getDate() === specialDate[1] &&
 		(specialDate.length === 2 || current_time.getFullYear() === specialDate[2])
 	);
 }
-export function toFlatTimeArray(events: DailyEvent[], { hours = 0, minutes = 0 }: RelativeTimeFormat): NamedTime[] {
+export function toFlatTimeArray(
+	events: DailyEvent[],
+	{ hours = 0, minutes = 0 }: RelativeTimeFormat = {}
+): NamedTime[] {
 	return events.flatMap(({ start, end, name }) => [
 		{ time: Time.add(start, { hours, minutes }), name: `${name} starts` },
 		{ time: Time.add(end, { hours, minutes }), name: `${name} ends` }
 	]);
 }
 export function upperBound(times: NamedTime[], value: Time) {
-	return times.find(({ time }) => Time.greater(time, value))
+	return times.find(({ time }) => Time.greater(time, value));
 }
