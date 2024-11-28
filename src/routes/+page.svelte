@@ -79,14 +79,14 @@
 </svelte:head>
 
 <div class="h-full w-full snap-y snap-mandatory overflow-scroll">
-	<!-- <div class="flex h-full snap-center flex-col items-center justify-center bg-cyan-500">
+	<div class="flex h-full snap-center flex-col items-center justify-center bg-cyan-500">
 		<span class="font-mono text-6xl md:text-9xl">{fmt.format(current_time)}</span>
 		{#if right}
 			<span class="mt-3 text-lg md:text-3xl">
 				<StatusText {right} {current_time} />
 			</span>
 		{/if}
-	</div> -->
+	</div>
 	<div
 		class="h-full snap-center max-md:flex max-md:flex-col max-md:items-center max-md:justify-center md:grid md:grid-cols-2"
 	>
