@@ -1,4 +1,5 @@
 <script lang="ts">
+	import SecretController from '../SecretController.svelte';
 	import StatusText from '../StatusText.svelte';
 	import {
 		Time,
@@ -82,6 +83,10 @@
 	);
 	let right = $derived(upperBound(times, Time.fromDate(current_time)));
 	const fmt = new Intl.DateTimeFormat(undefined, { timeStyle: 'medium' });
+
+	let secretMessage: string | undefined = $state();
+
+	let formatted = $derived(fmt.format(current_time));
 </script>
 
 <svelte:head>
@@ -89,12 +94,14 @@
 	<meta name="description" content="view and check the schedule for Reagan HS" />
 </svelte:head>
 
+<SecretController bind:secretMessage />
+
 <div class="h-full w-full snap-y snap-mandatory overflow-scroll">
 	<div class="flex h-full snap-center flex-col items-center justify-center bg-cyan-500">
-		<span class="font-mono text-6xl md:text-9xl">{fmt.format(current_time)}</span>
+		<span class="font-mono text-6xl md:text-9xl">{formatted}</span>
 		{#if right}
 			<span class="mt-3 text-lg md:text-3xl">
-				<StatusText {right} {current_time} />
+				<StatusText {right} {current_time} {secretMessage} />
 			</span>
 		{/if}
 	</div>
@@ -102,10 +109,10 @@
 		class="h-full snap-center max-md:flex max-md:flex-col max-md:items-center max-md:justify-center md:grid md:grid-cols-2"
 	>
 		<div class="flex flex-col items-center justify-center">
-			<span class="font-mono text-6xl">{fmt.format(current_time)}</span>
+			<span class="font-mono text-6xl">{formatted}</span>
 			{#if right}
 				<span class="mt-2 md:text-xl">
-					<StatusText {right} {current_time} />
+					<StatusText {right} {current_time} {secretMessage} />
 				</span>
 			{/if}
 		</div>

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Time } from './utils';
 
-	let { right, current_time }: { right: { time: Time; name: string }; current_time: Date } =
+	let { right, current_time, secretMessage }: { right: { time: Time; name: string }; current_time: Date; secretMessage?: string } =
 		$props();
 	const m = new Intl.NumberFormat(undefined, { style: 'unit', unit: 'minute' });
 	const H = new Intl.NumberFormat(undefined, { style: 'unit', unit: 'hour' });
@@ -9,20 +9,6 @@
 	let duration = $derived(
 		Time.subtract(right.time, new Time(current_time.getHours(), current_time.getMinutes()))
 	);
-
-	let chance = 1 / 1000;
-	let secretMessage = $state();
-	let secretMessages = ['William loves Elana', 'Optimized sub-optimal code', 'Marry me Chloe'];
-	$effect(() => {
-		if (Math.random() < chance)
-			secretMessage = secretMessages[Math.floor(Math.random() * secretMessages.length)];
-		const id = setTimeout(() => {
-			secretMessage = undefined;
-		}, 1000);
-		return () => {
-			clearTimeout(id);
-		};
-	});
 </script>
 
 {#if secretMessage}
