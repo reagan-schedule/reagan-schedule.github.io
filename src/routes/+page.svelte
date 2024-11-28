@@ -102,7 +102,7 @@
 			<label class="contents">
 				<span>View:</span>
 				<select
-					class="mt-2 appearance-none rounded-full border-2 border-slate-200 bg-slate-100 px-8 py-2"
+					class="mt-2 appearance-none rounded-full border-2 border-slate-200 bg-slate-100 px-8 py-2 text-center"
 					bind:value={displayedTypeOfDay}
 				>
 					{#each schedules as [prop]}
