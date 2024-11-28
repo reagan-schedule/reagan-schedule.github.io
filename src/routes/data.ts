@@ -1,20 +1,17 @@
 //schedules
 // thanks william :)
 
-import { Time } from '../Time';
-
-type Dates = number[][];
-type Schedule = { name: string; id: string; start: Time; end: Time }[];
+import { Time, type DailyEvent, type SpecialDate } from '../utils';
 
 const erDates = [
 	[9, 11],
 	[10, 4],
 	[2, 7]
-] as Dates; //24-25 school year, not including end of semester (they end at 1:20)
-const sem1Dates = [[11, 17]] as Dates; //finals day 1
-const sem2Dates = [[11, 18]] as Dates; //finals day 2
-const sem3Dates = [[11, 19]] as Dates; //finals day 3
-const sem4Dates = [[11, 20]] as Dates; //finals day 4
+] as SpecialDate[]; //24-25 school year, not including end of semester (they end at 1:20)
+const sem1Dates = [[11, 17]] as SpecialDate[]; //finals day 1
+const sem2Dates = [[11, 18]] as SpecialDate[]; //finals day 2
+const sem3Dates = [[11, 19]] as SpecialDate[]; //finals day 3
+const sem4Dates = [[11, 20]] as SpecialDate[]; //finals day 4
 const regSchedule = [
 	{ name: 'Period 1', id: 'p1', start: new Time(8, 50), end: new Time(9, 45) },
 	{ name: 'Period 2', id: 'p2', start: new Time(9, 50), end: new Time(10, 45) },
@@ -54,7 +51,7 @@ const regSchedule = [
 		start: new Time(15, 25),
 		end: new Time(16, 15)
 	}
-] as Schedule;
+] as DailyEvent[];
 const strikeSchedule = [
 	{ name: 'Period 1', id: 'p1', start: new Time(8, 50), end: new Time(9, 40) },
 	{ name: 'Period 2', id: 'p2', start: new Time(9, 45), end: new Time(10, 30) },
@@ -90,7 +87,7 @@ const strikeSchedule = [
 		start: new Time(15, 30),
 		end: new Time(16, 15)
 	}
-] as Schedule;
+] as DailyEvent[];
 const erSchedule = [
 	{ name: 'Period 1', id: 'p1', start: new Time(8, 50), end: new Time(9, 26) },
 	{ name: 'Period 2', id: 'p2', start: new Time(9, 30), end: new Time(10, 6) },
@@ -115,7 +112,7 @@ const erSchedule = [
 		end: new Time(13, 21)
 	},
 	{ name: 'Period 8', id: 'p8', start: new Time(13, 25), end: new Time(14, 0) }
-] as Schedule;
+] as DailyEvent[];
 const sem1Schedule = [
 	{ name: 'Period 1', id: 'p1', start: new Time(8, 50), end: new Time(9, 35) },
 	{ name: 'Period 2', id: 'p2', start: new Time(9, 40), end: new Time(10, 25) },
@@ -155,7 +152,7 @@ const sem1Schedule = [
 		start: new Time(15, 30),
 		end: new Time(16, 15)
 	}
-] as Schedule;
+] as DailyEvent[];
 const sem2Schedule = [
 	{ name: 'Period 1', id: 'p1', start: new Time(8, 50), end: new Time(9, 35) },
 	{ name: 'Period 2', id: 'p2', start: new Time(9, 40), end: new Time(10, 50) },
@@ -195,7 +192,7 @@ const sem2Schedule = [
 		start: new Time(15, 30),
 		end: new Time(16, 15)
 	}
-] as Schedule;
+] as DailyEvent[];
 const sem3Schedule = [
 	{ name: 'Period 1', id: 'p1', start: new Time(8, 50), end: new Time(10, 5) },
 	{
@@ -217,7 +214,7 @@ const sem3Schedule = [
 		start: new Time(12, 10),
 		end: new Time(13, 20)
 	}
-] as Schedule;
+] as DailyEvent[];
 const sem4Schedule = [
 	{ name: 'Period 3', id: 'p3', start: new Time(8, 50), end: new Time(10, 5) },
 	{
@@ -239,9 +236,9 @@ const sem4Schedule = [
 		start: new Time(12, 10),
 		end: new Time(13, 20)
 	}
-] as Schedule;
+] as DailyEvent[];
 
-const week = [
+const scheduleByWeek = [
 	'nil',
 	'regSchedule',
 	'regSchedule',
@@ -263,5 +260,5 @@ export {
 	sem2Schedule,
 	sem3Schedule,
 	sem4Schedule,
-	week
+	scheduleByWeek
 };

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Time } from './Time';
+	import { Time } from './utils';
 
 	let { right, current_time }: { right: { time: Time; name: string }; current_time: Date } =
 		$props();

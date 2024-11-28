@@ -12,7 +12,7 @@ import {
 	sem2Schedule,
 	sem3Schedule,
 	sem4Schedule,
-	week
+	scheduleByWeek
 } from './data';
 export const load: PageLoad = () => {
 	return {
@@ -32,6 +32,6 @@ export const load: PageLoad = () => {
 		sem2Dates,
 		sem3Dates,
 		sem4Dates,
-		week
+		scheduleByWeek
 	};
 };

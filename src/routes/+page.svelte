@@ -1,13 +1,20 @@
 <script lang="ts">
-	import Status from '../Status.svelte';
-	import { format, Time } from '../Time';
+	import StatusText from '../StatusText.svelte';
+	import {
+		Time,
+		format,
+		isSpecialDate,
+		toFlatTimeArray,
+		upperBound,
+		type DailyEvent,
+		type NamedTime,
+		type SpecialDate
+	} from '../utils';
 
 	let { data } = $props();
-	let schedules = $derived(data.schedules);
+	let { schedules } = data;
 
-	function overrides(current_time: Date) {
-		const day = current_time.getDate();
-		const month = current_time.getMonth();
+	function getSchedule(current_time: Date) {
 		const schedule = (
 			[
 				['sem1Schedule', data.sem1Dates],
@@ -15,12 +22,12 @@
 				['sem3Schedule', data.sem3Dates],
 				['sem4Schedule', data.sem4Dates],
 				['erSchedule', data.erDates]
-			] satisfies [string, number[][]][]
-		).find(([_, dates]) => dates.some(([m, d]) => m === month && d === day));
+			] satisfies [string, SpecialDate[]][]
+		).find(([_, dates]) => dates.some((date) => isSpecialDate(current_time, date)));
 
 		if (schedule) return schedule[0];
 
-		const daySchedule = data.week[current_time.getDay()];
+		const daySchedule = data.scheduleByWeek[current_time.getDay()];
 		return !daySchedule ? 'regSchedule' : daySchedule;
 	}
 	let current_time = $state(new Date());
@@ -39,42 +46,30 @@
 
 	// svelte-ignore state_referenced_locally
 	let displayedTypeOfDay = $state(
-		!localization.has(overrides(current_time)) ? 'regSchedule' : overrides(current_time)
+		!localization.has(getSchedule(current_time)) ? 'regSchedule' : getSchedule(current_time)
 	);
 	// hidden ones (nil for weekends) have precedence
 	let typeOfDay = $derived(
-		!localization.has(overrides(current_time)) ? overrides(current_time) : displayedTypeOfDay
+		!localization.has(getSchedule(current_time)) ? getSchedule(current_time) : displayedTypeOfDay
 	);
 	let curSchedule = $derived(schedules.get(typeOfDay));
 	let displayedSchedule = $derived(schedules.get(displayedTypeOfDay));
 
 	let times = $derived(
 		(() => {
-			const times = curSchedule?.flatMap(({ start, end, name }) => [
-				{ time: start, name: `${name} starts` },
-				{ time: end, name: `${name} ends` }
-			]);
+			const times = toFlatTimeArray(curSchedule as DailyEvent[], {});
 			const next = new Date(current_time);
 			let i = 0;
 			do {
 				next.setDate(next.getDate() + 1);
 				i++;
-			} while (overrides(next) === 'nil');
-			const typeOfDay = overrides(next);
-			times?.push(
-				...(schedules.get(typeOfDay)?.flatMap(({ start, end, name }) => [
-					{ time: new Time(start.hours + 24 * i, start.minutes), name: `${name} starts` },
-					{ time: new Time(end.hours + 24 * i, end.minutes), name: `${name} ends` }
-				]) as { time: Time; name: string }[])
-			);
+			} while (getSchedule(next) === 'nil');
+			const scheduleNext = schedules.get(getSchedule(next));
+			times?.push(...toFlatTimeArray(scheduleNext as DailyEvent[], { hours: 24 * i }));
 			return times;
 		})()
 	);
-	let right = $derived(
-		times?.find(({ time }) =>
-			Time.greater(time, new Time(current_time.getHours(), current_time.getMinutes()))
-		)
-	);
+	let right = $derived(upperBound(times as NamedTime[], Time.fromDate(current_time)));
 	const fmt = new Intl.DateTimeFormat(undefined, { timeStyle: 'medium' });
 </script>
 
@@ -84,24 +79,32 @@
 </svelte:head>
 
 <div class="h-full w-full snap-y snap-mandatory overflow-scroll">
-	<div class="flex h-full snap-center flex-col items-center justify-center bg-cyan-500">
-		<span class="font-mono text-6xl md:text-9xl">{current_time.toLocaleTimeString()}</span>
+	<!-- <div class="flex h-full snap-center flex-col items-center justify-center bg-cyan-500">
+		<span class="font-mono text-6xl md:text-9xl">{fmt.format(current_time)}</span>
 		{#if right}
-			<span class="mt-3 text-lg md:text-3xl"><Status {right} {current_time} /></span>
+			<span class="mt-3 text-lg md:text-3xl">
+				<StatusText {right} {current_time} />
+			</span>
 		{/if}
-	</div>
+	</div> -->
 	<div
 		class="h-full snap-center max-md:flex max-md:flex-col max-md:items-center max-md:justify-center md:grid md:grid-cols-2"
 	>
 		<div class="flex flex-col items-center justify-center">
 			<span class="font-mono text-6xl">{fmt.format(current_time)}</span>
 			{#if right}
-				<span class="mt-2 md:text-xl"><Status {right} {current_time} /></span>
+				<span class="mt-2 md:text-xl">
+					<StatusText {right} {current_time} />
+				</span>
 			{/if}
 		</div>
 		<div class="flex flex-col items-center justify-center">
 			<label class="contents">
-				<select class="mb-2 p-2" bind:value={displayedTypeOfDay}>
+				<span>View:</span>
+				<select
+					class="mt-2 appearance-none rounded-full border-2 border-slate-200 bg-slate-100 px-8 py-2"
+					bind:value={displayedTypeOfDay}
+				>
 					{#each schedules as [prop]}
 						{#if localization.has(prop)}
 							<option value={prop}>{localization.get(prop)}</option>
@@ -110,7 +113,7 @@
 				</select>
 			</label>
 			{#if displayedSchedule}
-				<table class="prose">
+				<table class="prose mt-2 prose-td:text-center">
 					<tbody>
 						{#each displayedSchedule as { name, start, end }}
 							<tr>
