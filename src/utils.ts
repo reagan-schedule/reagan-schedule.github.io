@@ -33,18 +33,16 @@ export function format(time: Time) {
 	nil.setHours(time.hours, time.minutes);
 	return fmt.format(nil);
 }
-export type SpecialDate =
-	| [month: number, date: number]
-	| [month: number, date: number, year: number];
+export type MonthDay = [month: number, date: number];
+export type MonthDayYear = [month: number, date: number, year: number];
 export type DailyEvent = { name: string; id: string; start: Time; end: Time };
-type RelativeTimeFormat = { hours?: number; minutes?: number };
-type NamedTime = { time: Time; name: string };
-export function matchDate(current_time: Date, specialDate: SpecialDate) {
-	return (
-		current_time.getMonth() === specialDate[0] &&
-		current_time.getDate() === specialDate[1] &&
-		(specialDate.length === 2 || current_time.getFullYear() === specialDate[2])
-	);
+export type RelativeTimeFormat = { hours?: number; minutes?: number };
+export type NamedTime = { time: Time; name: string };
+export function matchDate(matcher: MonthDayYear) {
+	return (value: MonthDay | MonthDayYear) =>
+		matcher[0] === value[0] &&
+		matcher[1] === value[1] &&
+		(value.length === 2 || matcher[2] === value[2]);
 }
 export function toFlatTimeArray(
 	events: DailyEvent[],
@@ -55,6 +53,6 @@ export function toFlatTimeArray(
 		{ time: Time.add(end, { hours, minutes }), name: `${name} ends` }
 	]);
 }
-export function upperBound(times: NamedTime[], value: Time) {
-	return times.find(({ time }) => Time.greater(time, value));
+export function upperBound(range: NamedTime[], value: Time) {
+	return range.find(({ time }) => Time.greater(time, value));
 }

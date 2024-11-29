@@ -1,8 +1,11 @@
 <script lang="ts">
 	import { Time } from './utils';
 
-	let { right, current_time, secretMessage }: { right: { time: Time; name: string }; current_time: Date; secretMessage?: string } =
-		$props();
+	let {
+		right,
+		current_time,
+		secretMessage
+	}: { right: { time: Time; name: string }; current_time: Date; secretMessage?: string } = $props();
 	const m = new Intl.NumberFormat(undefined, { style: 'unit', unit: 'minute' });
 	const H = new Intl.NumberFormat(undefined, { style: 'unit', unit: 'hour' });
 	const fmt = new Intl.ListFormat();

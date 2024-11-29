@@ -1,5 +1,4 @@
 <script lang="ts">
-	import SecretController from '../SecretController.svelte';
 	import StatusText from '../StatusText.svelte';
 	import {
 		Time,
@@ -7,24 +6,14 @@
 		matchDate,
 		toFlatTimeArray,
 		upperBound,
-		type DailyEvent,
-		type SpecialDate
+		type MonthDay,
+		type MonthDayYear
 	} from '../utils';
+	import { messageChance, secretMessages } from './notSecret';
 
-	let {
-		data
-	}: {
-		data: {
-			dates: {
-				[x: string]: SpecialDate[];
-			};
-			schedules: {
-				[x: string]: DailyEvent[];
-			};
-			scheduleByWeek: string[];
-		};
-	} = $props();
+	let { data } = $props();
 	let { schedules, dates } = data;
+	type ScheduleName = keyof typeof schedules;
 
 	function getSchedule(current_time: Date) {
 		const schedule = (
@@ -34,15 +23,19 @@
 				['sem3Schedule', dates.sem3Dates],
 				['sem4Schedule', dates.sem4Dates],
 				['erSchedule', dates.erDates]
-			] satisfies [string, SpecialDate[]][]
-		).find(([_, dates]) => dates.some((date) => matchDate(current_time, date)));
+			] as [ScheduleName, Array<MonthDay | MonthDayYear>][]
+		).find(([_, dates]) =>
+			dates.some(
+				matchDate([current_time.getMonth(), current_time.getDate(), current_time.getFullYear()])
+			)
+		)?.[0];
 
-		if (schedule) return schedule[0];
+		if (schedule) return schedule;
 
 		const daySchedule = data.scheduleByWeek[current_time.getDay()];
 		return daySchedule || 'regSchedule';
 	}
-	let current_time = $state(new Date());
+	let current_time = $state.raw(new Date());
 	setInterval(() => {
 		current_time = new Date();
 	});
@@ -58,11 +51,11 @@
 
 	// svelte-ignore state_referenced_locally
 	let displayedTypeOfDay = $state(
-		!localization.has(getSchedule(current_time)) ? 'regSchedule' : getSchedule(current_time)
+		localization.has(getSchedule(current_time)) ? getSchedule(current_time) : 'regSchedule'
 	);
 	// hidden ones (nil for weekends) have precedence
 	let typeOfDay = $derived(
-		!localization.has(getSchedule(current_time)) ? getSchedule(current_time) : displayedTypeOfDay
+		localization.has(getSchedule(current_time)) ? displayedTypeOfDay : getSchedule(current_time)
 	);
 	let curSchedule = $derived(schedules[typeOfDay]);
 	let displayedSchedule = $derived(schedules[displayedTypeOfDay]);
@@ -75,7 +68,7 @@
 			do {
 				next.setDate(next.getDate() + 1);
 				i++;
-			} while (getSchedule(next) === 'nil');
+			} while (schedules[getSchedule(next)].length === 0);
 			const scheduleNext = schedules[getSchedule(next)];
 			times.push(...toFlatTimeArray(scheduleNext, { hours: 24 * i }));
 			return times;
@@ -86,6 +79,15 @@
 
 	let secretMessage: string | undefined = $state();
 
+	$effect(() => {
+		if (Math.random() < messageChance) {
+			secretMessage = secretMessages[Math.floor(Math.random() * secretMessages.length)];
+			setTimeout(() => {
+				secretMessage = undefined;
+			}, 1000);
+		}
+	});
+
 	let formatted = $derived(fmt.format(current_time));
 </script>
 
@@ -94,10 +96,8 @@
 	<meta name="description" content="view and check the schedule for Reagan HS" />
 </svelte:head>
 
-<SecretController bind:secretMessage />
-
-<div class="h-full w-full snap-y snap-mandatory overflow-scroll">
-	<div class="flex h-full snap-center flex-col items-center justify-center bg-cyan-500">
+<div class="h-full w-full snap-y snap-mandatory overflow-scroll text-slate-950">
+	<div class="flex h-full snap-center flex-col items-center justify-center bg-cyan-400">
 		<span class="font-mono text-6xl md:text-9xl">{formatted}</span>
 		{#if right}
 			<span class="mt-3 text-lg md:text-3xl">
@@ -106,7 +106,7 @@
 		{/if}
 	</div>
 	<div
-		class="h-full snap-center max-md:flex max-md:flex-col max-md:items-center max-md:justify-center md:grid md:grid-cols-2"
+		class="h-full snap-center max-md:flex max-md:flex-col max-md:items-center max-md:justify-center max-md:gap-4 md:grid md:grid-cols-2"
 	>
 		<div class="flex flex-col items-center justify-center">
 			<span class="font-mono text-6xl">{formatted}</span>
@@ -117,10 +117,12 @@
 			{/if}
 		</div>
 		<div class="flex flex-col items-center justify-center">
-			<label class="contents">
-				<span>View:</span>
+			<label
+				class="relative after:absolute after:right-2 after:top-1/2 after:-translate-y-1/2 after:rounded-full after:border-x-4 after:border-t-4 after:border-slate-800 after:border-x-transparent after:content-['']"
+			>
+				<span class="sr-only">View</span>
 				<select
-					class="mt-2 appearance-none rounded-full border-2 border-slate-200 bg-slate-100 px-8 py-2 text-center [text-align-last:_center]"
+					class="appearance-none rounded-full border border-slate-200 bg-slate-100 px-6 text-center [text-align-last:_center]"
 					bind:value={displayedTypeOfDay}
 				>
 					{#each Object.keys(schedules) as prop}
@@ -131,7 +133,7 @@
 				</select>
 			</label>
 			{#if displayedSchedule}
-				<table class="prose mt-2 prose-td:text-center">
+				<table class="prose prose-slate mt-2 prose-td:text-center">
 					<tbody>
 						{#each displayedSchedule as { name, start, end }}
 							<tr>
