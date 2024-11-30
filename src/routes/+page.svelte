@@ -5,15 +5,12 @@
 		format,
 		matchDate,
 		toFlatTimeArray,
-		upperBound,
-		type MonthDay,
-		type MonthDayYear
+		upperBound
 	} from '../utils';
-	import { messageChance, secretMessages } from './notSecret';
+	import { messageChance, secretMessages } from '../notSecret';
 
 	let { data } = $props();
 	let { schedules, dates } = data;
-	type ScheduleName = keyof typeof schedules;
 
 	function getSchedule(current_time: Date) {
 		const schedule = (
@@ -23,12 +20,8 @@
 				['sem3Schedule', dates.sem3Dates],
 				['sem4Schedule', dates.sem4Dates],
 				['erSchedule', dates.erDates]
-			] as [ScheduleName, Array<MonthDay | MonthDayYear>][]
-		).find(([_, dates]) =>
-			dates.some(
-				matchDate([current_time.getMonth(), current_time.getDate(), current_time.getFullYear()])
-			)
-		)?.[0];
+			] satisfies [keyof typeof schedules, [number, number, number?][]][]
+		).find(([_, dates]) => dates.some(matchDate(current_time)))?.[0];
 
 		if (schedule) return schedule;
 
@@ -76,18 +69,6 @@
 	);
 	let right = $derived(upperBound(times, Time.fromDate(current_time)));
 	const fmt = new Intl.DateTimeFormat(undefined, { timeStyle: 'medium' });
-
-	let secretMessage: string | undefined = $state();
-
-	$effect(() => {
-		if (Math.random() < messageChance) {
-			secretMessage = secretMessages[Math.floor(Math.random() * secretMessages.length)];
-			setTimeout(() => {
-				secretMessage = undefined;
-			}, 1000);
-		}
-	});
-
 	let formatted = $derived(fmt.format(current_time));
 </script>
 
@@ -101,7 +82,7 @@
 		<span class="font-mono text-6xl md:text-9xl">{formatted}</span>
 		{#if right}
 			<span class="mt-3 text-lg md:text-3xl">
-				<StatusText {right} {current_time} {secretMessage} />
+				<StatusText {right} {current_time}/>
 			</span>
 		{/if}
 	</div>
@@ -112,7 +93,7 @@
 			<span class="font-mono text-6xl">{formatted}</span>
 			{#if right}
 				<span class="mt-2 md:text-xl">
-					<StatusText {right} {current_time} {secretMessage} />
+					<StatusText {right} {current_time}/>
 				</span>
 			{/if}
 		</div>
@@ -125,7 +106,7 @@
 					class="appearance-none rounded-full border border-slate-200 bg-slate-100 px-6 text-center [text-align-last:_center]"
 					bind:value={displayedTypeOfDay}
 				>
-					{#each Object.keys(schedules) as prop}
+					{#each Object.getOwnPropertyNames(schedules) as prop}
 						{#if localization.has(prop)}
 							<option value={prop}>{localization.get(prop)}</option>
 						{/if}

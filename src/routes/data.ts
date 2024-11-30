@@ -12,8 +12,8 @@ export const dates = {
 	sem1Dates: [[11, 17]], //finals day 1
 	sem2Dates: [[11, 18]], //finals day 2
 	sem3Dates: [[11, 19]], //finals day 3
-	sem4Dates: [[11, 20]] //finals day 4
-};
+	sem4Dates: [[11, 20]]//finals day 4
+} satisfies Record<string,[number,number,number?][]>;
 export const schedules = {
 	regSchedule: [
 		{ name: 'Period 1', id: 'p1', start: new Time(8, 50), end: new Time(9, 45) },

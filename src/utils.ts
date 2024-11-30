@@ -38,11 +38,11 @@ export type MonthDayYear = [month: number, date: number, year: number];
 export type DailyEvent = { name: string; id: string; start: Time; end: Time };
 export type RelativeTimeFormat = { hours?: number; minutes?: number };
 export type NamedTime = { time: Time; name: string };
-export function matchDate(matcher: MonthDayYear) {
+export function matchDate(matcher: Date) {
 	return (value: MonthDay | MonthDayYear) =>
-		matcher[0] === value[0] &&
-		matcher[1] === value[1] &&
-		(value.length === 2 || matcher[2] === value[2]);
+		matcher.getMonth() === value[0] &&
+		matcher.getDate() === value[1] &&
+		(value.length === 2 || matcher.getFullYear() === value[2]);
 }
 export function toFlatTimeArray(
 	events: DailyEvent[],
