@@ -1,13 +1,9 @@
 <script lang="ts">
+	import { SvelteDate } from 'svelte/reactivity';
 	import StatusText from '../StatusText.svelte';
-	import {
-		Time,
-		format,
-		matchDate,
-		toFlatTimeArray,
-		upperBound
-	} from '../utils';
-	import { messageChance, secretMessages } from '../notSecret';
+	import { Time, format, matchDate, toFlatTimeArray, upperBound } from '../utils';
+	import { fade, fly } from 'svelte/transition';
+	import { flip } from 'svelte/animate';
 
 	let { data } = $props();
 	let { schedules, dates } = data;
@@ -28,9 +24,9 @@
 		const daySchedule = data.scheduleByWeek[current_time.getDay()];
 		return daySchedule || 'regSchedule';
 	}
-	let current_time = $state.raw(new Date());
+	let current_time = new SvelteDate();
 	setInterval(() => {
-		current_time = new Date();
+		current_time.setTime(Date.now());
 	});
 	let localization = new Map([
 		['regSchedule', 'Regular Schedule'],
@@ -82,7 +78,7 @@
 		<span class="font-mono text-6xl md:text-9xl">{formatted}</span>
 		{#if right}
 			<span class="mt-3 text-lg md:text-3xl">
-				<StatusText {right} {current_time}/>
+				<StatusText {right} {current_time} />
 			</span>
 		{/if}
 	</div>
@@ -93,17 +89,15 @@
 			<span class="font-mono text-6xl">{formatted}</span>
 			{#if right}
 				<span class="mt-2 md:text-xl">
-					<StatusText {right} {current_time}/>
+					<StatusText {right} {current_time} />
 				</span>
 			{/if}
 		</div>
 		<div class="flex flex-col items-center justify-center">
-			<label
-				class="relative after:absolute after:right-2 after:top-1/2 after:-translate-y-1/2 after:rounded-full after:border-x-4 after:border-t-4 after:border-slate-800 after:border-x-transparent after:content-['']"
-			>
-				<span class="sr-only">View</span>
+			<label class="relative">
+				<span class="sr-only">Current view</span>
 				<select
-					class="appearance-none rounded-full border border-slate-200 bg-slate-100 px-6 text-center [text-align-last:_center]"
+					class="peer appearance-none rounded-md border border-slate-200 bg-slate-100 pl-2 pr-6 leading-7 shadow-inner"
 					bind:value={displayedTypeOfDay}
 				>
 					{#each Object.getOwnPropertyNames(schedules) as prop}
@@ -112,12 +106,15 @@
 						{/if}
 					{/each}
 				</select>
+				<span
+					class="pointer-events-none absolute right-2 mt-3 border-x-4 border-t-4 border-x-transparent border-t-slate-950"
+				></span>
 			</label>
 			{#if displayedSchedule}
 				<table class="prose prose-slate mt-2 prose-td:text-center">
 					<tbody>
-						{#each displayedSchedule as { name, start, end }}
-							<tr>
+						{#each displayedSchedule as { name, start, end, id } (id)}
+							<tr transition:fly={{ x: 200 }} animate:flip>
 								<td>{name}</td>
 								<td>{format(start)}-{format(end)}</td>
 							</tr>
