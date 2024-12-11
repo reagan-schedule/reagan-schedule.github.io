@@ -73,7 +73,7 @@
 	<meta name="description" content="view and check the schedule for Reagan HS" />
 </svelte:head>
 
-<div class="h-full w-full snap-y snap-mandatory overflow-scroll text-slate-950">
+<div class="h-full w-full snap-y snap-mandatory overflow-auto text-slate-950">
 	<div class="flex h-full snap-center flex-col items-center justify-center bg-cyan-400">
 		<span class="font-mono text-6xl md:text-9xl">{formatted}</span>
 		{#if right}
