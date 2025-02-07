@@ -2,8 +2,10 @@
 	import { SvelteDate } from 'svelte/reactivity';
 	import StatusText from '../StatusText.svelte';
 	import { Time, format, matchDate, toFlatTimeArray, upperBound } from '../utils';
-	import { fade, fly } from 'svelte/transition';
+	import { fly } from 'svelte/transition';
 	import { flip } from 'svelte/animate';
+	import { untrack } from 'svelte';
+	import { getSecretMessage } from '../secret';
 
 	let { data } = $props();
 	let { schedules, dates } = data;
@@ -49,24 +51,39 @@
 	let curSchedule = $derived(schedules[typeOfDay]);
 	let displayedSchedule = $derived(schedules[displayedTypeOfDay]);
 
-	let times = $derived(
-		(() => {
-			const times = toFlatTimeArray(curSchedule);
-			const next = new Date(current_time);
-			let i = 0;
-			do {
-				next.setDate(next.getDate() + 1);
-				i++;
-			} while (schedules[getSchedule(next)].length === 0);
-			const scheduleNext = schedules[getSchedule(next)];
-			times.push(...toFlatTimeArray(scheduleNext, { hours: 24 * i }));
-			return times;
-		})()
-	);
+	let times = $derived.by(() => {
+		const times = toFlatTimeArray(curSchedule);
+		const next = new Date(current_time);
+		let i = 0;
+		do {
+			next.setDate(next.getDate() + 1);
+			i++;
+		} while (schedules[getSchedule(next)].length === 0);
+		const scheduleNext = schedules[getSchedule(next)];
+		times.push(...toFlatTimeArray(scheduleNext, { hours: 24 * i }));
+		return times;
+	});
 	let right = $derived(upperBound(times, Time.fromDate(current_time)));
 	const fmt = new Intl.DateTimeFormat(undefined, { timeStyle: 'medium' });
 	let formatted = $derived(fmt.format(current_time));
+
+	let secret: { message?: string; cooldown: number } = $state({
+		cooldown: 0
+	});
+	function onVisibilityChange() {
+		if (!document.hidden) {
+			if(untrack(() => secret.cooldown) <= Date.now()) {
+				secret.message = getSecretMessage();
+				secret.cooldown = Date.now() + 10000;
+				setTimeout(() => {
+					delete secret.message;
+				}, 1000)
+			}
+		}
+	}
 </script>
+
+<svelte:document onvisibilitychange={onVisibilityChange} />
 
 <svelte:head>
 	<title>Reagan HS Schedule</title>
@@ -78,7 +95,11 @@
 		<span class="font-mono text-6xl md:text-9xl">{formatted}</span>
 		{#if right}
 			<span class="mt-3 text-lg md:text-3xl">
-				<StatusText {right} {current_time} />
+				{#if secret.message}
+					{secret.message}
+				{:else}
+					<StatusText {right} {current_time} />
+				{/if}
 			</span>
 		{/if}
 	</div>
@@ -89,7 +110,11 @@
 			<span class="font-mono text-6xl">{formatted}</span>
 			{#if right}
 				<span class="mt-2 md:text-xl">
-					<StatusText {right} {current_time} />
+					{#if secret.message}
+						{secret.message}
+					{:else}
+						<StatusText {right} {current_time} />
+					{/if}
 				</span>
 			{/if}
 		</div>
