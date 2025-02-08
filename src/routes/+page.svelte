@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { SvelteDate } from 'svelte/reactivity';
-	import StatusText from '../StatusText.svelte';
-	import { Time, format, matchDate, toFlatTimeArray, upperBound } from '../utils';
 	import { fly } from 'svelte/transition';
 	import { flip } from 'svelte/animate';
 	import { untrack } from 'svelte';
-	import { getSecretMessage } from '../secret';
+	import StatusText from '../StatusText.svelte';
+	import { Time, format, matchDate, toFlatTimeArray, upperBound } from '../utils';
+	import { setSecretMessage } from '../secret';
 
 	let { data } = $props();
 	let { schedules, dates } = data;
@@ -40,9 +40,10 @@
 		['sem4Schedule', 'Finals Day 4']
 	]);
 
-	// svelte-ignore state_referenced_locally
 	let displayedTypeOfDay = $state(
-		localization.has(getSchedule(current_time)) ? getSchedule(current_time) : 'regSchedule'
+		untrack(() =>
+			localization.has(getSchedule(current_time)) ? getSchedule(current_time) : 'regSchedule'
+		)
 	);
 	// hidden ones (nil for weekends) have precedence
 	let typeOfDay = $derived(
@@ -67,18 +68,12 @@
 	const fmt = new Intl.DateTimeFormat(undefined, { timeStyle: 'medium' });
 	let formatted = $derived(fmt.format(current_time));
 
-	let secret: { message?: string; cooldown: number } = $state({
-		cooldown: 0
+	let secret: { message?: string; ready: boolean } = $state({
+		ready: true
 	});
 	function onVisibilityChange() {
 		if (!document.hidden) {
-			if(untrack(() => secret.cooldown) <= Date.now()) {
-				secret.message = getSecretMessage();
-				secret.cooldown = Date.now() + 10000;
-				setTimeout(() => {
-					delete secret.message;
-				}, 1000)
-			}
+			setSecretMessage(secret);
 		}
 	}
 </script>

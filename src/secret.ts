@@ -5,8 +5,15 @@ const secretMessages = [
 ];
 const messageChance = 1 / 1000;
 
-export function getSecretMessage() {
-	if(Math.random() < messageChance){
-		return secretMessages[Math.floor(Math.random() * secretMessages.length)]
+export function setSecretMessage(handler: { ready: boolean, message?: string }) {
+	if(handler.ready&&Math.random()<messageChance){
+		handler.message = secretMessages[Math.floor(Math.random()*secretMessages.length)];
+		handler.ready = false;
+		setTimeout(() => {
+			delete handler.message;
+		}, 1000);
+		setTimeout(() => {
+			handler.ready = true;
+		}, 10000);
 	}
 }
