@@ -1,58 +1,80 @@
-export class Time {
+interface TimeFormat {
 	hours: number;
 	minutes: number;
-	constructor(hours: number, minutes: number) {
-		this.hours = hours;
-		this.minutes = minutes;
-	}
-	static fromDate(date: Date) {
-		return new Time(date.getHours(), date.getMinutes());
-	}
-	static equal(left: Time, right: Time) {
-		return left.hours === right.hours && left.minutes === right.minutes;
-	}
-	static less(left: Time, right: Time) {
+}
+export const Time = {
+	fromDate(date: Date): TimeFormat {
+		return { hours: date.getHours(), minutes: date.getMinutes() };
+	},
+	equal(left: TimeFormat, right: TimeFormat) {
+		return left.hours === right.hours && left.minutes == right.minutes;
+	},
+	less(left: TimeFormat, right: TimeFormat) {
 		return left.hours < right.hours || (left.hours === right.hours && left.minutes < right.minutes);
-	}
-	static greater(left: Time, right: Time) {
+	},
+	greater(left: TimeFormat, right: TimeFormat) {
 		return left.hours > right.hours || (left.hours === right.hours && left.minutes > right.minutes);
-	}
-	static subtract(left: Time, right: Time) {
+	},
+	subtract(left: TimeFormat, right: TimeFormat): TimeFormat {
 		let minutes = left.minutes - right.minutes + left.hours * 60 - right.hours * 60;
 		const hours = Math.floor(minutes / 60);
 		minutes %= 60;
 		return { hours, minutes };
+	},
+	add(left: TimeFormat, right: TimeFormat): TimeFormat {
+		return {
+			hours: left.hours + right.hours,
+			minutes: left.minutes + right.minutes
+		};
 	}
-	static add(left: Time, { hours = 0, minutes = 0 }: RelativeTimeFormat) {
-		return new Time(left.hours + hours, left.minutes + minutes);
-	}
-}
-const fmt = new Intl.DateTimeFormat(undefined, { timeStyle: 'short' });
-export function format(time: Time) {
+};
+const fmt = new Intl.DateTimeFormat(navigator.language, { timeStyle: 'short' });
+export function format(time: TimeFormat) {
 	const nil = new Date(0);
 	nil.setHours(time.hours, time.minutes);
 	return fmt.format(nil);
 }
-export type MonthDay = [month: number, date: number];
-export type MonthDayYear = [month: number, date: number, year: number];
-export type DailyEvent = { name: string; id: string; start: Time; end: Time };
-export type RelativeTimeFormat = { hours?: number; minutes?: number };
-export type NamedTime = { time: Time; name: string };
+export type DateSpecific = [month: number, date: number, year?: number];
+export interface RecurringEvent {
+	name: string;
+	id: string;
+	start: TimeFormat;
+	end: TimeFormat;
+}
+export interface NamedTime {
+	time: TimeFormat;
+	name: string;
+}
 export function matchDate(matcher: Date) {
-	return (value: MonthDay | MonthDayYear) =>
+	return (value: DateSpecific) =>
 		matcher.getMonth() === value[0] &&
 		matcher.getDate() === value[1] &&
-		(value.length === 2 || matcher.getFullYear() === value[2]);
+		(!value[2] || matcher.getFullYear() === value[2]);
 }
-export function toFlatTimeArray(
-	events: DailyEvent[],
-	{ hours = 0, minutes = 0 }: RelativeTimeFormat = {}
-): NamedTime[] {
-	return events.flatMap(({ start, end, name }) => [
-		{ time: Time.add(start, { hours, minutes }), name: `${name} starts` },
-		{ time: Time.add(end, { hours, minutes }), name: `${name} ends` }
-	]);
-}
-export function upperBound(range: NamedTime[], value: Time) {
+export function findUpperBound(range: NamedTime[], value: TimeFormat) {
 	return range.find(({ time }) => Time.greater(time, value));
+}
+export function getSchedule<ScheduleKey>(
+	forTime: Date,
+	frozen: [ScheduleKey, DateSpecific[]][],
+	fallback: Record<number, ScheduleKey>,
+	fallbackFallback: ScheduleKey
+) {
+	const schedule = frozen.find(([, dates]) => dates.some(matchDate(forTime)))?.[0];
+	if (schedule) return schedule;
+
+	const daySchedule = fallback[forTime.getDay()];
+	if (daySchedule) return daySchedule;
+	return fallbackFallback;
+}
+export function flattenTimes(
+	populate: unknown[],
+	events: RecurringEvent[],
+	hours = 0,
+	minutes = 0
+) {
+	for (const { start, end, name } of events) {
+		populate.push({ time: Time.add(start, { hours, minutes }), name: `${name} starts` });
+		populate.push({ time: Time.add(end, { hours, minutes }), name: `${name} ends` });
+	}
 }
