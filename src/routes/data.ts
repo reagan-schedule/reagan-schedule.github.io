@@ -1,11 +1,7 @@
 //schedules
 // thanks william :)
 
-class Time {
-	constructor(hours: number, minutes: number) {
-		return { hours, minutes };
-	}
-}
+import { Time } from '../utils';
 
 export const dates = {
 	erDates: [
