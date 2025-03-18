@@ -21,15 +21,15 @@
 
 	// create a global singleton Date
 	let _theDate = new Date();
-	function Date_getThis(theTime) {
+	function Date_getThis(theTime: number) {
 		_theDate.setTime(theTime);
 		return _theDate;
 	}
 
 	let fallback: ScheduleKey = 'regSchedule';
-	function keyFor(when: number) {
+	function keyFor(when: Date) {
 		return getSchedule<ScheduleKey>(
-			Date_getThis(when),
+			when,
 			[
 				['sem1Schedule', dates.sem1Dates],
 				['sem2Schedule', dates.sem2Dates],
@@ -59,7 +59,8 @@
 		'sem4Schedule'
 	];
 
-	let scheduleKeyAtLoadTime = keyFor(untrack(() => Date_getThis(curTime)));
+	// svelte-ignore state_referenced_locally
+	let scheduleKeyAtLoadTime = keyFor(Date_getThis(curTime));
 	let pickedKey = $state(localization[scheduleKeyAtLoadTime] ? scheduleKeyAtLoadTime : fallback);
 	let displayedSchedule = $derived(schedules[pickedKey]);
 
@@ -77,7 +78,7 @@
 			}
 		}
 	});
-	
+
 	let secret: { message?: string } = $state({});
 	function message() {
 		if (document.hidden) return;

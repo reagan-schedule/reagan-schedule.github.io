@@ -43,7 +43,7 @@ export function formatAsClock(start: Time, end: Time) {
 	const left = new Date();
 	left.setHours(start.hours);
 	left.setMinutes(start.minutes);
-	let right = new Date();
+	const right = new Date();
 	right.setHours(end.hours);
 	right.setMinutes(end.minutes);
 	return fmt.formatRange(left, right);
