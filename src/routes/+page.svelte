@@ -110,7 +110,7 @@
 		class="h-full snap-center max-md:flex max-md:flex-col max-md:items-center max-md:justify-center max-md:gap-4 md:grid md:grid-cols-2"
 	>
 		<div class="flex flex-col items-center justify-center">
-			<span class="font-mono text-6xl">{fmt.format(curTime)}</span>
+			<span class="font-mono text-6xl">{fmt.format(Date_getThis(curTime))}</span>
 			{#if future}
 				<span class="mt-2 md:text-xl">
 					{#if secret.message}
@@ -141,7 +141,7 @@
 					{#each displayedSchedule as { name, start, end, id } (id)}
 						<tr transition:fly={{ x: 200 }} animate:flip>
 							<th scope="row">{name}</th>
-							<td>{formatAsClock(start)}-{formatAsClock(end)}</td>
+							<td>{formatAsClock(start, end)}</td>
 						</tr>
 					{/each}
 				</tbody>

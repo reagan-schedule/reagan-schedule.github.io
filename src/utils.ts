@@ -39,10 +39,14 @@ interface RecurringEvent {
 	readonly end: Time;
 }
 const fmt = new Intl.DateTimeFormat(undefined, { timeStyle: 'short' });
-export function formatAsClock(time: Time) {
-	const dummy = new Date(0);
-	dummy.setHours(time.hours, time.minutes);
-	return fmt.format(dummy);
+export function formatAsClock(start: Time, end: Time) {
+	const left = new Date();
+	left.setHours(start.hours);
+	left.setMinutes(start.minutes);
+	let right = new Date();
+	right.setHours(end.hours);
+	right.setMilliseconds(end.hours);
+	return fmt.formatRange(left, right);
 }
 function match(matcher: Date) {
 	return (value: DateSpecific) =>
