@@ -12,16 +12,24 @@
 
 	// do you know what Svelte* classes do? they make it so the set* functions update the state
 	// i think that makes the cpu save useless because we have to init instances of Date anyways
-	let curTime = $state(new Date());
+
+	let curTime = $state(Date.now());
 	const fmt = new Intl.DateTimeFormat(undefined, { timeStyle: 'medium' });
 	setInterval(() => {
-		curTime = new Date();
+		curTime = Date.now();
 	});
 
+	// create a global singleton Date
+	let _theDate = new Date();
+	function Date_getThis(theTime) {
+		_theDate.setTime(theTime);
+		return _theDate;
+	}
+
 	let fallback: ScheduleKey = 'regSchedule';
-	function keyFor(when: Date) {
+	function keyFor(when: number) {
 		return getSchedule<ScheduleKey>(
-			when,
+			Date_getThis(when),
 			[
 				['sem1Schedule', dates.sem1Dates],
 				['sem2Schedule', dates.sem2Dates],
@@ -51,13 +59,13 @@
 		'sem4Schedule'
 	];
 
-	let scheduleKeyAtLoadTime = keyFor(untrack(() => curTime));
+	let scheduleKeyAtLoadTime = keyFor(untrack(() => Date_getThis(curTime)));
 	let pickedKey = $state(localization[scheduleKeyAtLoadTime] ? scheduleKeyAtLoadTime : fallback);
 	let displayedSchedule = $derived(schedules[pickedKey]);
 
 	let future = $derived.by(() => {
 		for (
-			let future = new Date(curTime), daysIntoFuture = 0;
+			let future = Date_getThis(curTime), daysIntoFuture = 0;
 			daysIntoFuture < 1000;
 			future.setDate(future.getDate() + 1), daysIntoFuture++
 		) {
@@ -87,13 +95,13 @@
 
 <div class="h-full w-full snap-y snap-mandatory overflow-auto text-stone-950">
 	<div class="flex h-full snap-center flex-col items-center justify-center bg-cyan-400">
-		<span class="font-mono text-6xl md:text-9xl">{fmt.format(curTime)}</span>
+		<span class="font-mono text-6xl md:text-9xl">{fmt.format(Date_getThis(curTime))}</span>
 		{#if future}
 			<span class="mt-3 text-lg md:text-3xl">
 				{#if secret.message}
 					{secret.message}
 				{:else}
-					<StatusText future={future.time} event={future.name} present={curTime} />
+					<StatusText future={future.time} event={future.name} present={Date_getThis(curTime)} />
 				{/if}
 			</span>
 		{/if}
@@ -108,7 +116,7 @@
 					{#if secret.message}
 						{secret.message}
 					{:else}
-						<StatusText future={future.time} event={future.name} present={curTime} />
+						<StatusText future={future.time} event={future.name} present={Date_getThis(curTime)} />
 					{/if}
 				</span>
 			{/if}
