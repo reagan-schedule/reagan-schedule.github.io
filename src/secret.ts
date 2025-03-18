@@ -1,7 +1,6 @@
 const secretMessages = [
 	'William loves Elana',
 	'Optimized sub-optimal code',
-	'Marry me Chloe'
 ];
 const messageChance = 1 / 1000;
 
@@ -13,9 +12,9 @@ export function setSecretMessage(handler: { message?: string }) {
 		ready = false;
 		setTimeout(() => {
 			delete handler.message;
-		}, 1000);
+		}, 1_000);
 		setTimeout(() => {
 			ready = true;
-		}, 10000);
+		}, 10_000);
 	}
 }

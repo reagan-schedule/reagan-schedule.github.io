@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { SvelteDate } from 'svelte/reactivity';
 	import { fly } from 'svelte/transition';
 	import { flip } from 'svelte/animate';
 	import { untrack } from 'svelte';
@@ -11,11 +10,12 @@
 	let { schedules, dates } = data;
 	type ScheduleKey = keyof typeof schedules;
 
-	let curTime = new SvelteDate();
+	// do you know what Svelte* classes do? they make it so the set* functions update the state
+	// i think that makes the cpu save useless because we have to init instances of Date anyways
+	let curTime = $state(new Date());
 	const fmt = new Intl.DateTimeFormat(undefined, { timeStyle: 'medium' });
-	let bigTime = $derived(fmt.format(curTime));
 	setInterval(() => {
-		curTime.setTime(Date.now());
+		curTime = new Date();
 	});
 
 	let fallback: ScheduleKey = 'regSchedule';
@@ -51,9 +51,8 @@
 		'sem4Schedule'
 	];
 
-	let scheduleKey = $derived(keyFor(curTime));
-	let pickedKey = $state(untrack(() => (localization[scheduleKey] ? scheduleKey : fallback)));
-	// hidden ones (nil for weekends) have precedence
+	let scheduleKeyAtLoadTime = keyFor(untrack(() => curTime));
+	let pickedKey = $state(localization[scheduleKeyAtLoadTime] ? scheduleKeyAtLoadTime : fallback);
 	let displayedSchedule = $derived(schedules[pickedKey]);
 
 	let future = $derived.by(() => {
@@ -70,7 +69,7 @@
 			}
 		}
 	});
-
+	
 	let secret: { message?: string } = $state({});
 	function message() {
 		if (document.hidden) return;
@@ -88,7 +87,7 @@
 
 <div class="h-full w-full snap-y snap-mandatory overflow-auto text-stone-950">
 	<div class="flex h-full snap-center flex-col items-center justify-center bg-cyan-400">
-		<span class="font-mono text-6xl md:text-9xl">{bigTime}</span>
+		<span class="font-mono text-6xl md:text-9xl">{fmt.format(curTime)}</span>
 		{#if future}
 			<span class="mt-3 text-lg md:text-3xl">
 				{#if secret.message}
@@ -103,7 +102,7 @@
 		class="h-full snap-center max-md:flex max-md:flex-col max-md:items-center max-md:justify-center max-md:gap-4 md:grid md:grid-cols-2"
 	>
 		<div class="flex flex-col items-center justify-center">
-			<span class="font-mono text-6xl">{bigTime}</span>
+			<span class="font-mono text-6xl">{fmt.format(curTime)}</span>
 			{#if future}
 				<span class="mt-2 md:text-xl">
 					{#if secret.message}
