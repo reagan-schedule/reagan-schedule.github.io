@@ -45,7 +45,7 @@ export function formatAsClock(start: Time, end: Time) {
 	left.setMinutes(start.minutes);
 	let right = new Date();
 	right.setHours(end.hours);
-	right.setMinutes(end.hours);
+	right.setMinutes(end.minutes);
 	return fmt.formatRange(left, right);
 }
 function match(matcher: Date) {
