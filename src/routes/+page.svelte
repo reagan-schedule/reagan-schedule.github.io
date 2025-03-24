@@ -1,10 +1,8 @@
 <script lang="ts">
-	import { fly } from 'svelte/transition';
-	import { flip } from 'svelte/animate';
-	import { untrack } from 'svelte';
-	import StatusText from '../StatusText.svelte';
-	import { Time, formatAsClock, getSchedule, flatEvents } from '../utils';
-	import { setSecretMessage } from '../secret';
+	import StatusText from '$lib/components/StatusText.svelte';
+	import ScheduleView from '$lib/components/ScheduleView.svelte';
+	import { adjustClock, getSchedule, realTime } from '$lib/ctz';
+	import { setSecretMessage } from '$lib/secret';
 
 	let { data } = $props();
 	let { schedules, dates } = data;
@@ -26,10 +24,9 @@
 		return _theDate;
 	}
 
-	let fallback: ScheduleKey = 'regSchedule';
-	function keyFor(when: Date) {
+	function keyFor(dateObject: Date) {
 		return getSchedule<ScheduleKey>(
-			when,
+			dateObject,
 			[
 				['sem1Schedule', dates.sem1Dates],
 				['sem2Schedule', dates.sem2Dates],
@@ -40,14 +37,15 @@
 			data.scheduleByWeek
 		);
 	}
-	let localization: Partial<Record<ScheduleKey, string>> = {
+	let localization: Record<ScheduleKey, string | null> = {
 		regSchedule: 'Regular Schedule',
 		strikeSchedule: 'STRIKE Schedule',
 		erSchedule: 'Early Release',
 		sem1Schedule: 'Finals Day 1',
 		sem2Schedule: 'Finals Day 2',
 		sem3Schedule: 'Finals Day 3',
-		sem4Schedule: 'Finals Day 4'
+		sem4Schedule: 'Finals Day 4',
+		nil: null
 	};
 	let pickableKeys: readonly ScheduleKey[] = [
 		'regSchedule',
@@ -59,20 +57,20 @@
 		'sem4Schedule'
 	];
 
+	let fallback: ScheduleKey = 'regSchedule';
 	// svelte-ignore state_referenced_locally
-	let scheduleKeyAtLoadTime = keyFor(Date_getThis(curTime));
-	let pickedKey = $state(localization[scheduleKeyAtLoadTime] ? scheduleKeyAtLoadTime : fallback);
-	let displayedSchedule = $derived(schedules[pickedKey]);
+	let curDate = Date_getThis(curTime);
+	adjustClock(curDate);
+	let scheduleKeyAtLoadTime = keyFor(curDate);
 
 	let future = $derived.by(() => {
-		for (
-			let future = Date_getThis(curTime), daysIntoFuture = 0;
-			daysIntoFuture < 1000;
-			future.setDate(future.getDate() + 1), daysIntoFuture++
-		) {
+		let future = Date_getThis(curTime);
+		adjustClock(future);
+		let daysIntoFuture = 0;
+		for (; daysIntoFuture < 1000; future.setDate(future.getDate() + 1), daysIntoFuture++) {
 			let events = schedules[keyFor(future)];
-			for (let event of flatEvents(events, daysIntoFuture)) {
-				if (Time.greater(event.time, Time.fromDate(future))) {
+			for (let event of realTime(events, future)) {
+				if (event.time > curTime) {
 					return event;
 				}
 			}
@@ -84,7 +82,7 @@
 		if (document.hidden) return;
 		setSecretMessage(secret);
 	}
-	$effect(() => untrack(message));
+	$effect(message);
 </script>
 
 <svelte:document onvisibilitychange={message} />
@@ -102,7 +100,7 @@
 				{#if secret.message}
 					{secret.message}
 				{:else}
-					<StatusText future={future.time} event={future.name} present={Date_getThis(curTime)} />
+					<StatusText future={future.time} event={future.name} present={curTime} />
 				{/if}
 			</span>
 		{/if}
@@ -117,36 +115,16 @@
 					{#if secret.message}
 						{secret.message}
 					{:else}
-						<StatusText future={future.time} event={future.name} present={Date_getThis(curTime)} />
+						<StatusText future={future.time} event={future.name} present={curTime} />
 					{/if}
 				</span>
 			{/if}
 		</div>
-		<div class="flex flex-col items-center justify-center">
-			<label class="relative">
-				<span class="sr-only">Current view</span>
-				<select
-					class="peer appearance-none rounded-md border border-stone-200 bg-stone-100 pr-6 pl-2 leading-7 shadow-inner"
-					bind:value={pickedKey}
-				>
-					{#each pickableKeys as scheduleKey}
-						<option value={scheduleKey}>{localization[scheduleKey]}</option>
-					{/each}
-				</select>
-				<span
-					class="pointer-events-none absolute right-2 mt-3 border-x-4 border-t-4 border-x-transparent border-t-stone-950"
-				></span>
-			</label>
-			<table class="prose prose-stone prose-td:text-center mt-2">
-				<tbody>
-					{#each displayedSchedule as { name, start, end, id } (id)}
-						<tr transition:fly={{ x: 200 }} animate:flip>
-							<th scope="row">{name}</th>
-							<td>{formatAsClock(start, end)}</td>
-						</tr>
-					{/each}
-				</tbody>
-			</table>
-		</div>
+		<ScheduleView
+			options={pickableKeys}
+			{localization}
+			{schedules}
+			initialKey={localization[scheduleKeyAtLoadTime] ? scheduleKeyAtLoadTime : fallback}
+		/>
 	</div>
 </div>

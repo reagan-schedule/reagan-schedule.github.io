@@ -1,7 +1,7 @@
 //schedules
 // thanks william :)
 
-import { Time } from '../utils';
+import { Time } from '$lib/ctz';
 
 export const dates = {
 	erDates: [
@@ -242,13 +242,3 @@ export const schedules = {
 	],
 	nil: []
 };
-
-export const scheduleByWeek = [
-	'nil',
-	'regSchedule',
-	'regSchedule',
-	'regSchedule',
-	'strikeSchedule',
-	'regSchedule',
-	'nil'
-];
