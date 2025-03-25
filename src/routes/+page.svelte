@@ -1,32 +1,15 @@
 <script lang="ts">
-	import StatusText from '$lib/components/StatusText.svelte';
 	import ScheduleView from '$lib/components/ScheduleView.svelte';
-	import { adjustClock, getSchedule, realTime } from '$lib/ctz';
-	import { setSecretMessage } from '$lib/secret';
+	import { obtainFuture, getSchedule, rebase } from '$lib/ctz';
+	import { untrack } from 'svelte';
 
 	let { data } = $props();
 	let { schedules, dates } = data;
-	type ScheduleKey = keyof typeof schedules;
-
-	// do you know what Svelte* classes do? they make it so the set* functions update the state
-	// i think that makes the cpu save useless because we have to init instances of Date anyways
-
 	let curTime = $state(Date.now());
-	const fmt = new Intl.DateTimeFormat(undefined, { timeStyle: 'medium' });
-	setInterval(() => {
-		curTime = Date.now();
-	});
-
-	// create a global singleton Date
-	let _theDate = new Date();
-	function Date_getThis(theTime: number) {
-		_theDate.setTime(theTime);
-		return _theDate;
-	}
-
-	function keyFor(dateObject: Date) {
+	type ScheduleKey = keyof typeof schedules;
+	function keyFor(dateObj: Date) {
 		return getSchedule<ScheduleKey>(
-			dateObject,
+			dateObj,
 			[
 				['sem1Schedule', dates.sem1Dates],
 				['sem2Schedule', dates.sem2Dates],
@@ -37,62 +20,28 @@
 			data.scheduleByWeek
 		);
 	}
-	let localization: Record<ScheduleKey, string | null> = {
-		regSchedule: 'Regular Schedule',
-		strikeSchedule: 'STRIKE Schedule',
-		erSchedule: 'Early Release',
-		sem1Schedule: 'Finals Day 1',
-		sem2Schedule: 'Finals Day 2',
-		sem3Schedule: 'Finals Day 3',
-		sem4Schedule: 'Finals Day 4',
-		nil: null
-	};
-	let pickableKeys: readonly ScheduleKey[] = [
-		'regSchedule',
-		'strikeSchedule',
-		'erSchedule',
-		'sem1Schedule',
-		'sem2Schedule',
-		'sem3Schedule',
-		'sem4Schedule'
-	];
-
-	let fallback: ScheduleKey = 'regSchedule';
-	// svelte-ignore state_referenced_locally
-	let curDate = Date_getThis(curTime);
-	adjustClock(curDate);
-	let scheduleKeyAtLoadTime = keyFor(curDate);
-
-	let future = $derived.by(() => {
-		let future = Date_getThis(curTime);
-		adjustClock(future);
-		let daysIntoFuture = 0;
-		for (; daysIntoFuture < 1000; future.setDate(future.getDate() + 1), daysIntoFuture++) {
-			let events = schedules[keyFor(future)];
-			for (let event of realTime(events, future)) {
-				if (event.time > curTime) {
-					return event;
-				}
-			}
-		}
+	let pickedKey = $state(keyFor(rebase(curTime)));
+	// future should update when the pickedKey dependency changes and
+	// i like react better, and also on a interval depending on the last return
+	let future = $state([1000]);
+	let timeoutId = setTimeout(() => {
+		future = [1000];
+	}, future[0]);
+	setInterval(() => {
+		curTime = Date.now();
 	});
-
-	let secret: { message?: string } = $state({});
-	function message() {
-		if (document.hidden) return;
-		setSecretMessage(secret);
-	}
-	$effect(message);
+	// $inspect(curTime);
+	$inspect(future);
 </script>
 
-<svelte:document onvisibilitychange={message} />
+<!-- <svelte:document onvisibilitychange={message} /> -->
 
 <svelte:head>
 	<title>Reagan HS Schedule</title>
 	<meta name="description" content="bell schedule app for Reagan HS" />
 </svelte:head>
 
-<div class="h-full w-full snap-y snap-mandatory overflow-auto text-stone-950">
+<!-- <div class="h-full w-full snap-y snap-mandatory overflow-auto text-stone-950">
 	<div class="flex h-full snap-center flex-col items-center justify-center bg-cyan-400">
 		<span class="font-mono text-6xl md:text-9xl">{fmt.format(Date_getThis(curTime))}</span>
 		{#if future}
@@ -120,11 +69,22 @@
 				</span>
 			{/if}
 		</div>
-		<ScheduleView
-			options={pickableKeys}
-			{localization}
-			{schedules}
-			initialKey={localization[scheduleKeyAtLoadTime] ? scheduleKeyAtLoadTime : fallback}
-		/>
+		<div class="flex flex-col items-center justify-center">
+			<label class="relative">
+				<span class="sr-only">Current view</span>
+				<select
+					class="peer appearance-none rounded-md border border-stone-200 bg-stone-100 pr-6 pl-2 leading-7 shadow-inner"
+					bind:value={pickedKey}
+				>
+					{#each data.pickableKeys as scheduleKey}
+						<option value={scheduleKey}>{data.local[scheduleKey]}</option>
+					{/each}
+				</select>
+				<span
+					class="pointer-events-none absolute right-2 mt-3 border-x-4 border-t-4 border-x-transparent border-t-stone-950"
+				></span>
+			</label>
+			<ScheduleView schedule={schedules[pickedKey]} />
+		</div>
 	</div>
-</div>
+</div> -->
