@@ -1,7 +1,14 @@
 //schedules
 // thanks william :)
 
-import { Time } from '$lib/ctz';
+export class Time {
+	readonly hour: number;
+	readonly min: number;
+	constructor(hour: number, min: number) {
+		this.hour = hour;
+		this.min = min;
+	}
+}
 
 export const dates = {
 	erDates: [
