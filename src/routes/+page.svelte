@@ -1,32 +1,36 @@
 <script lang="ts">
-	import { Intl, Temporal } from "@js-temporal/polyfill";
-	import { flip } from "svelte/animate";
-	import { fly } from "svelte/transition";
-	import { future, getSchedule, localize } from "$lib/utils";
-	import { schedules } from "$lib/imutable";
-	import { untrack } from "svelte";
+	import { Intl, Temporal } from '@js-temporal/polyfill';
+	import { flip } from 'svelte/animate';
+	import { fly } from 'svelte/transition';
+	import { future, getSchedule, localize } from '$lib/utils';
+	import { schedules } from '$lib/imutable';
+	import { untrack } from 'svelte';
+	import StatusText from '$lib/components/StatusText.svelte';
 
-	let pickableKeys = [
-		'regSchedule',
-		'strikeSchedule',
-		'erSchedule',
-	] as const;
+	let pickableKeys = ['regSchedule', 'strikeSchedule', 'erSchedule'] as const;
 	let now = $state(Temporal.Now.instant());
-	let pickedKey = $state(getSchedule(now.toZonedDateTimeISO('America/Chicago')) || 'regSchedule');
+	let key = $derived(getSchedule(now.toZonedDateTimeISO('America/Chicago')));
+	let pickedKey = $state(key || 'regSchedule');
 	let clock = new Intl.DateTimeFormat(undefined, { timeStyle: 'medium' });
 	let fmt = new Intl.DateTimeFormat(undefined, { timeStyle: 'short' });
-	let then = $state(future(now, getSchedule(now.toZonedDateTimeISO('America/Chicago')) && pickedKey));
+	let then = $state(future(now, key && pickedKey));
+	// so it doesnt update every second
+	let timeoutId: number;
 	$effect(() => {
-		then = future(untrack(() => now), getSchedule(now.toZonedDateTimeISO('America/Chicago')) && pickedKey);
-	})
+		then = future(
+			untrack(() => now),
+			key && pickedKey
+		);
+	});
 	$effect(() => {
-		setTimeout(() => {
-			then = untrack(() => future(now, getSchedule(now.toZonedDateTimeISO('America/Chicago')) && pickedKey));
+		clearTimeout(timeoutId);
+		timeoutId = setTimeout(() => {
+			then = untrack(() => future(now, key && pickedKey));
 		}, then.shouldUpdate);
-	})
+	});
 	setInterval(() => {
 		now = Temporal.Now.instant();
-	})
+	}, 1000);
 </script>
 
 <!-- <svelte:document onvisibilitychange={message} /> -->
@@ -39,30 +43,14 @@
 <div class="h-screen w-full snap-y snap-mandatory overflow-auto text-stone-950">
 	<div class="flex h-full snap-center flex-col items-center justify-center bg-cyan-400">
 		<span class="font-mono text-6xl md:text-9xl">{clock.format(now)}</span>
-		<!-- {#if future}
-			<span class="mt-3 text-lg md:text-3xl">
-				{#if secret.message}
-					{secret.message}
-				{:else}
-					<StatusText future={future.time} event={future.name} present={Date_getThis(curTime)} />
-				{/if}
-			</span>
-		{/if} -->
+		<StatusText class="mt-3 text-lg md:text-3xl" {now} {then} />
 	</div>
 	<div
 		class="h-full snap-center max-md:flex max-md:flex-col max-md:items-center max-md:justify-center max-md:gap-4 md:grid md:grid-cols-2"
 	>
 		<div class="flex flex-col items-center justify-center">
 			<span class="font-mono text-6xl">{clock.format(now)}</span>
-			<!-- {#if future}
-				<span class="mt-2 md:text-xl">
-					{#if secret.message}
-						{secret.message}
-					{:else}
-						<StatusText future={future.time} event={future.name} present={Date_getThis(curTime)} />
-					{/if}
-				</span>
-			{/if} -->
+			<StatusText class="mt-2 md:text-xl" {now} {then} />
 		</div>
 		<div class="flex flex-col items-center justify-center">
 			<label class="relative">
@@ -79,7 +67,8 @@
 					class="pointer-events-none absolute right-2 mt-3 border-x-4 border-t-4 border-x-transparent border-t-stone-950"
 				></span>
 			</label>
-			<table class="prose prose-stone prose-td:text-center mt-2">
+			<table class="prose prose-stone prose-td:text-center mt-2 caption-bottom">
+				<caption>This table is shown in CTZ</caption>
 				<tbody>
 					{#each schedules[pickedKey] as { name, start, end, id } (id)}
 						<tr transition:fly={{ x: 200 }} animate:flip>

@@ -9,11 +9,11 @@ import {
 	sem4Dates
 } from './imutable';
 
-type MField<K, U> = K extends Record<infer T, unknown> ? Record<T, U> : unknown;
+type CopyKeys<K, U> = K extends Record<infer T, unknown> ? Record<T, U> : unknown;
 type Entries<U> = U extends Record<infer K, infer V> ? ReadonlyArray<readonly [K, V]> : unknown;
 
 export function getSchedule(time: Temporal.ZonedDateTime): keyof typeof schedules | null {
-	const searchableDates: Entries<MField<typeof schedules, ReadonlyArray<readonly number[]>>> = [
+	const searchableDates: Entries<CopyKeys<typeof schedules, ReadonlyArray<readonly number[]>>> = [
 		['assemblySchedule', assemblyDates],
 		['erSchedule', erDates],
 		['sem1Schedule', sem1Dates],
@@ -43,11 +43,12 @@ export function future(time: Temporal.Instant, overide: keyof typeof schedules |
 		const schedule = (d === 0 && overide) || getSchedule(z);
 		for (const interval of schedule ? schedules[schedule] : []) {
 			for (const end of ['start', 'end'] as const) {
-				if (Temporal.Instant.compare(z.withPlainTime(interval[end]).toInstant(), time) > 0) {
+				const zWithTime = z.withPlainTime(interval[end]).toInstant();
+				if (Temporal.Instant.compare(zWithTime, time) > 0) {
 					return {
-						when: z.withPlainTime(interval[end]).toInstant(),
+						when: zWithTime,
 						what: [interval, end] as const,
-						shouldUpdate: time.until(z.withPlainTime(interval[end]).toInstant(), {
+						shouldUpdate: time.until(zWithTime, {
 							roundingMode: 'ceil',
 							smallestUnit: 'millisecond',
 							largestUnit: 'millisecond'
@@ -60,7 +61,7 @@ export function future(time: Temporal.Instant, overide: keyof typeof schedules |
 	return { shouldUpdate: 0 };
 }
 export function localize(key: keyof typeof schedules) {
-	const localization: Partial<MField<typeof schedules, string>> = {
+	const localization: Partial<CopyKeys<typeof schedules, string>> = {
 		erSchedule: 'Early Release',
 		regSchedule: 'Regular Schedule',
 		strikeSchedule: 'Strike Schedule'
