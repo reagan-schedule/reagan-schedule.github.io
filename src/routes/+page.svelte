@@ -6,6 +6,9 @@
 	import { schedules } from '$lib/imutable';
 	import { untrack } from 'svelte';
 	import StatusText from '$lib/components/StatusText.svelte';
+	import TwoPager from '$lib/components/TwoPager.svelte';
+	import Fullscreen from '$lib/components/Fullscreen.svelte';
+	import Stage from '$lib/components/Stage.svelte';
 
 	let pickableKeys = ['regSchedule', 'strikeSchedule', 'erSchedule'] as const;
 	let now = $state(Temporal.Now.instant());
@@ -40,19 +43,19 @@
 	<meta name="description" content="bell schedule app for Reagan HS" />
 </svelte:head>
 
-<div class="h-screen w-full snap-y snap-mandatory overflow-auto text-stone-950">
-	<div class="flex h-full snap-center flex-col items-center justify-center bg-cyan-400">
+<TwoPager class="text-stone-950">
+	<Fullscreen class="flex flex-col items-center justify-center bg-cyan-400">
 		<span class="font-mono text-6xl md:text-9xl">{clock.format(now)}</span>
 		<StatusText class="mt-3 text-lg md:text-3xl" {now} {then} />
-	</div>
-	<div
-		class="h-full snap-center max-md:flex max-md:flex-col max-md:items-center max-md:justify-center max-md:gap-4 md:grid md:grid-cols-2"
+	</Fullscreen>
+	<Fullscreen
+		class="max-md:flex max-md:flex-col max-md:items-center max-md:justify-center max-md:gap-4 md:grid md:grid-cols-2"
 	>
-		<div class="flex flex-col items-center justify-center">
+		<Stage>
 			<span class="font-mono text-6xl">{clock.format(now)}</span>
 			<StatusText class="mt-2 md:text-xl" {now} {then} />
-		</div>
-		<div class="flex flex-col items-center justify-center">
+		</Stage>
+		<Stage>
 			<label class="relative">
 				<span class="sr-only">Current view</span>
 				<select
@@ -78,6 +81,6 @@
 					{/each}
 				</tbody>
 			</table>
-		</div>
-	</div>
-</div>
+		</Stage>
+	</Fullscreen>
+</TwoPager>

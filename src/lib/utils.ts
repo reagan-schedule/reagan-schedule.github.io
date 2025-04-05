@@ -13,7 +13,7 @@ type CopyKeys<K, U> = K extends Record<infer T, unknown> ? Record<T, U> : unknow
 type Entries<U> = U extends Record<infer K, infer V> ? ReadonlyArray<readonly [K, V]> : unknown;
 
 export function getSchedule(time: Temporal.ZonedDateTime): keyof typeof schedules | null {
-	const searchableDates: Entries<CopyKeys<typeof schedules, ReadonlyArray<readonly number[]>>> = [
+	const keyDates: Entries<CopyKeys<typeof schedules, ReadonlyArray<readonly number[]>>> = [
 		['assemblySchedule', assemblyDates],
 		['erSchedule', erDates],
 		['sem1Schedule', sem1Dates],
@@ -21,10 +21,11 @@ export function getSchedule(time: Temporal.ZonedDateTime): keyof typeof schedule
 		['sem3Schedule', sem3Dates],
 		['sem4Schedule', sem4Dates]
 	];
-	for (const [key, dates] of searchableDates) {
+	for (const [key, dates] of keyDates) {
 		if (
 			dates.some(
-				(date) => ![time.month, time.day, time.year].some((x, i) => i < date.length && x !== date[i])
+				(date) =>
+					![time.month, time.day, time.year].some((x, i) => i < date.length && x !== date[i])
 			)
 		) {
 			return key;
@@ -41,7 +42,8 @@ export function getSchedule(time: Temporal.ZonedDateTime): keyof typeof schedule
 export function future(time: Temporal.Instant, overide: keyof typeof schedules | null) {
 	for (let z = time.toZonedDateTimeISO('America/Chicago'), d = 0; d < 1000; z = z.add('P1d'), d++) {
 		const schedule = (d === 0 && overide) || getSchedule(z);
-		for (const interval of schedule ? schedules[schedule] : []) {
+		if (schedule === null) continue;
+		for (const interval of schedules[schedule]) {
 			for (const end of ['start', 'end'] as const) {
 				const zWithTime = z.withPlainTime(interval[end]).toInstant();
 				if (Temporal.Instant.compare(zWithTime, time) > 0) {
