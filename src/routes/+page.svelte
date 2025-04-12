@@ -20,11 +20,14 @@
 	// so it doesnt update every second
 	let timeoutId: number;
 	$effect(() => {
-		then = future(
+		then = future( // recalculate when schedule changes
 			untrack(() => now),
 			key && pickedKey
 		);
 	});
+	// |
+	// v
+	// triggers this effect
 	$effect(() => {
 		clearTimeout(timeoutId);
 		timeoutId = setTimeout(() => {
