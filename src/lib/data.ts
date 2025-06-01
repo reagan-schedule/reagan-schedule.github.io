@@ -12,6 +12,7 @@ export const sem3Dates = [[11, 19]]; //finals day 3
 export const sem4Dates = [[11, 20]]; //finals day 4
 export const assemblyDates = [[0, 7]]; //I love school assemblies! (the lore is wild)
 export const testDates = [[2, 5]]; //SAT testing day
+export const holidayDates = [[2, 17], [5, 23]];
 
 //schedules
 
@@ -280,3 +281,4 @@ export const assemblySchedule = [
 		end: new Time(16, 15)
 	}
 ];
+export const holidaySchedule = [];

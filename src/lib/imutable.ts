@@ -1,6 +1,7 @@
 import {
 	assemblySchedule,
 	erSchedule,
+	holidaySchedule,
 	regSchedule,
 	sem1Schedule,
 	sem2Schedule,
@@ -17,6 +18,7 @@ export const schedules = {
 	sem2Schedule,
 	sem3Schedule,
 	sem4Schedule,
-	assemblySchedule
+	assemblySchedule,
+	holidaySchedule,
 };
-export { erDates, sem1Dates, sem2Dates, sem3Dates, sem4Dates, assemblyDates } from './data';
+export { erDates, sem1Dates, sem2Dates, sem3Dates, sem4Dates, assemblyDates, holidayDates } from './data';

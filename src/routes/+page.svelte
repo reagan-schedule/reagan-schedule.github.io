@@ -12,6 +12,7 @@
 
 	let pickableKeys = ['regSchedule', 'strikeSchedule', 'erSchedule'] as const;
 	let now = $state(Temporal.Now.instant());
+	// let now = $state(Temporal.Instant.from('2024-12-23T10:00-06:00'));
 	let key = $derived(getSchedule(now.toZonedDateTimeISO('America/Chicago')));
 	let pickedKey = $state(key || 'regSchedule');
 	let clock = new Intl.DateTimeFormat(undefined, { timeStyle: 'medium' });
@@ -20,7 +21,8 @@
 	// so it doesnt update every second
 	let timeoutId: number;
 	$effect(() => {
-		then = future( // recalculate when schedule changes
+		then = future(
+			// recalculate when schedule changes
 			untrack(() => now),
 			key && pickedKey
 		);
@@ -37,6 +39,8 @@
 	setInterval(() => {
 		now = Temporal.Now.instant();
 	}, 1000);
+	$inspect(then);
+	// add a visibility change that makes me go into hibernation and then resets all the effects on show
 </script>
 
 <!-- <svelte:document onvisibilitychange={message} /> -->
