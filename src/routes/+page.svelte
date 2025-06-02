@@ -9,6 +9,7 @@
 	import TwoPager from '$lib/components/TwoPager.svelte';
 	import Fullscreen from '$lib/components/Fullscreen.svelte';
 	import Stage from '$lib/components/Stage.svelte';
+	import type { EventHandler } from 'svelte/elements';
 
 	let pickableKeys = ['regSchedule', 'strikeSchedule', 'erSchedule'] as const;
 	let now = $state(Temporal.Now.instant());
@@ -41,9 +42,16 @@
 	}, 1000);
 	$inspect(then);
 	// add a visibility change that makes me go into hibernation and then resets all the effects on show
+	const sleep: EventHandler<Event, Document> = () => {
+		if (document.hidden) {
+			clearTimeout(timeoutId);
+		} else {
+			then = future(now, key && pickedKey);
+		}
+	};
 </script>
 
-<!-- <svelte:document onvisibilitychange={message} /> -->
+<svelte:document onvisibilitychange={sleep} />
 
 <svelte:head>
 	<title>Reagan HS Schedule</title>
