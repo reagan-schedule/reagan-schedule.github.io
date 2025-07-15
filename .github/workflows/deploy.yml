@@ -29,6 +29,7 @@ jobs:
       - name: build
         env:
           BASE_PATH: '/${{ github.event.repository.name }}'
+          PUBLIC_TZ: 'America/Chicago'
         run: |
           npm run build
 
