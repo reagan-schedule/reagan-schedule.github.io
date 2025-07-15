@@ -1,34 +1,34 @@
 <script lang="ts">
-	import type { future } from '$lib/utils';
-	import type { Temporal } from '@js-temporal/polyfill';
+	import { IntlContext } from '$lib/display';
+	import { Temporal } from '@js-temporal/polyfill';
+	import { getContext } from 'svelte';
 
 	let {
-		then,
+		soon,
 		now,
-		class: className = ''
+		class: className = '',
 	}: {
-		then: ReturnType<typeof future>;
-		now: Temporal.Instant;
+		now: Temporal.ZonedDateTime;
+		soon?: { kind: string; name: string; at: Temporal.ZonedDateTime };
 		class?: string;
 	} = $props();
-	let list = new Intl.ListFormat();
-	let hour = new Intl.NumberFormat(undefined, { style: 'unit', unit: 'hour' });
-	let minute = new Intl.NumberFormat(undefined, { style: 'unit', unit: 'minute' });
+	
+	let intl = getContext<IntlContext>('intl');
 </script>
 
-<span class={className}>
-	{#if then.when}
-		{@const duration = now.until(then.when, {
+<div class={className}>
+	{#if soon}
+		{@const duration = now.until(soon.at, {
 			roundingMode: 'ceil',
-			largestUnit: 'hour',
-			smallestUnit: 'minute'
+			largestUnit: 'day',
+			smallestUnit: 'minute',
 		})}
-		{@const parts = [
-			duration.hours && hour.format(duration.hours),
-			minute.format(duration.minutes)
-		].filter((x) => x !== 0)}
-		{list.format(parts)} until {then.what[1]} of {then.what[0].name}
+		{intl.asList(
+			duration.days && intl.unit('day').format(duration.days),
+			duration.hours && intl.unit('hour').format(duration.hours),
+			intl.unit('minute').format(duration.minutes)
+		)} until {soon.kind} of {soon.name}
 	{:else}
-		Oops! This shouldn't happen.
+		Oops! This is awkward...
 	{/if}
-</span>
+</div>

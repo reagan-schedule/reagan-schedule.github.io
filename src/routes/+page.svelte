@@ -1,54 +1,131 @@
 <script lang="ts">
-	import { Intl, Temporal } from '@js-temporal/polyfill';
+	import { Temporal } from '@js-temporal/polyfill';
 	import { flip } from 'svelte/animate';
 	import { fly } from 'svelte/transition';
-	import { future, getSchedule, localize } from '$lib/utils';
-	import { schedules } from '$lib/imutable';
-	import { untrack } from 'svelte';
+	import { setContext, untrack } from 'svelte';
 	import StatusText from '$lib/components/StatusText.svelte';
 	import TwoPager from '$lib/components/TwoPager.svelte';
 	import Fullscreen from '$lib/components/Fullscreen.svelte';
 	import Stage from '$lib/components/Stage.svelte';
 	import type { EventHandler } from 'svelte/elements';
+	import { IntlContext } from '$lib/display';
+	import { browser } from '$app/environment';
+	import { PUBLIC_TZ } from '$env/static/public';
+	import {
+		ScheduleCollection,
+		type Label,
+	} from '$lib/knows_schedules/schedule';
+	import {
+		applySchedule,
+		difference,
+		futureSchedules,
+		upperBound,
+	} from '$lib/atomic_future';
+	import { Compare } from '$lib/compare';
+	import { labels } from '$lib/knows_schedules/data';
+	import SecondsClock from '$lib/components/SecondsClock.svelte';
+	import { base } from '$app/paths';
+	const keys = new Map(Object.entries(labels));
 
-	let pickableKeys = ['regSchedule', 'strikeSchedule', 'erSchedule'] as const;
-	let now = $state(Temporal.Now.instant());
-	// let now = $state(Temporal.Instant.from('2024-12-23T10:00-06:00'));
-	let key = $derived(getSchedule(now.toZonedDateTimeISO('America/Chicago')));
-	let pickedKey = $state(key || 'regSchedule');
-	let clock = new Intl.DateTimeFormat(undefined, { timeStyle: 'medium' });
-	let fmt = new Intl.DateTimeFormat(undefined, { timeStyle: 'short' });
-	let then = $state(future(now, key && pickedKey));
-	// so it doesnt update every second
-	let timeoutId: number;
-	$effect(() => {
-		then = future(
-			// recalculate when schedule changes
+	const MAX_TIMEOUT = 2147483647;
+
+	const intlProvider = new IntlContext(
+		browser ? [...navigator.languages] : 'en-US'
+	);
+	setContext('intl', intlProvider);
+	const comp = new Compare<Temporal.PlainDateLike>(Temporal.PlainDate.compare);
+	const collection = new ScheduleCollection();
+	let now = $state(Temporal.Now.zonedDateTimeISO(PUBLIC_TZ));
+
+	function calculateFuture(key: Label | null) {
+		return futureSchedules(
 			untrack(() => now),
-			key && pickedKey
-		);
-	});
+			key,
+			{ comparator: comp, collection }
+		)
+			.take(1000)
+			.flatMap(applySchedule)
+			.find(upperBound);
+	}
+
+	let key = $derived(collection.getSchedule(now));
+	let pickedKey = $state(key || 'Regular Schedule');
+
+	let soon = $state(calculateFuture(key && pickedKey));
+
+	function recalculate() {
+		soon = calculateFuture(key && pickedKey);
+	}
+
+	function staticRecalculate() {
+		soon = calculateFuture(untrack(() => key && pickedKey));
+	}
+	let timeoutId: number;
+	$effect(recalculate);
 	// |
 	// v
 	// triggers this effect
 	$effect(() => {
 		clearTimeout(timeoutId);
-		timeoutId = setTimeout(() => {
-			then = untrack(() => future(now, key && pickedKey));
-		}, then.shouldUpdate);
+		timeoutId = setTimeout(
+			staticRecalculate,
+			Math.min(
+				MAX_TIMEOUT,
+				soon ?
+					difference(
+						soon.at,
+						untrack(() => now)
+					)
+				:	0
+			)
+		);
 	});
 	setInterval(() => {
-		now = Temporal.Now.instant();
+		now = Temporal.Now.zonedDateTimeISO(now.timeZoneId);
 	}, 1000);
-	$inspect(then);
-	// add a visibility change that makes me go into hibernation and then resets all the effects on show
+	$inspect(soon);
 	const sleep: EventHandler<Event, Document> = () => {
+		console.log('visibilitychange', 'document.hidden=', document.hidden);
 		if (document.hidden) {
 			clearTimeout(timeoutId);
-		} else {
-			then = future(now, key && pickedKey);
+			return;
 		}
+		staticRecalculate();
 	};
+
+	// let settings: Record<string, string> = $state(
+	// 	Object.fromEntries(collection.namedSchedule(pickedKey).map(({ name }) => [name, name]))
+	// );
+	// $inspect(settings);
+
+	// $effect(() => {
+	// 	if (!browser) {
+	// 		return;
+	// 	}
+	// 	const base64ascii = localStorage.getItem('::settings::');
+	// 	if (base64ascii === null) {
+	// 		return;
+	// 	}
+	// 	const bytes = atob(base64ascii);
+	// 	const decoded = Uint8Array.from(bytes, (v) => {
+	// 		const c = v.codePointAt(0);
+	// 		if (c === undefined) {
+	// 			throw new TypeError(bytes);
+	// 		}
+	// 		return c;
+	// 	});
+	// 	settings = JSON.parse(new TextDecoder().decode(decoded));
+	// });
+	// $effect(() => {
+	// 	if (!browser) {
+	// 		return;
+	// 	}
+	// 	const encoded = new TextEncoder().encode(JSON.stringify(settings));
+	// 	const bytes = String.fromCodePoint(...encoded.values());
+	// 	const base64ascii = btoa(bytes);
+
+	// 	localStorage.setItem('::settings::', base64ascii);
+	// });
 </script>
 
 <svelte:document onvisibilitychange={sleep} />
@@ -59,16 +136,22 @@
 </svelte:head>
 
 <TwoPager class="text-stone-950">
-	<Fullscreen class="flex flex-col items-center justify-center bg-cyan-400">
-		<span class="font-mono text-6xl md:text-9xl">{clock.format(now)}</span>
-		<StatusText class="mt-3 text-lg md:text-3xl" {now} {then} />
+	<Fullscreen class="flex flex-col items-center justify-center bg-cyan-300">
+		<SecondsClock
+			class="h-21 fill-stone-950 text-4xl sm:h-28 sm:text-6xl md:h-56 md:text-9xl"
+			now={now}
+		/>
+		<StatusText class="mt-3 text-md sm:text-lg md:text-3xl" now={now} soon={soon} />
 	</Fullscreen>
 	<Fullscreen
 		class="max-md:flex max-md:flex-col max-md:items-center max-md:justify-center max-md:gap-4 md:grid md:grid-cols-2"
 	>
 		<Stage>
-			<span class="font-mono text-6xl">{clock.format(now)}</span>
-			<StatusText class="mt-2 md:text-xl" {now} {then} />
+			<SecondsClock
+				class="h-21 fill-stone-950 text-4xl sm:h-28 sm:text-6xl"
+				now={now}
+			/>
+			<StatusText class="mt-2 md:text-xl" now={now} soon={soon} />
 		</Stage>
 		<Stage>
 			<label class="relative">
@@ -77,8 +160,8 @@
 					class="peer appearance-none rounded-md border border-stone-200 bg-stone-100 pr-6 pl-2 leading-7 shadow-inner"
 					bind:value={pickedKey}
 				>
-					{#each pickableKeys as k}
-						<option value={k}>{localize(k)}</option>
+					{#each keys.keys() as k}
+						<option value={k}>{k}</option>
 					{/each}
 				</select>
 				<span
@@ -86,12 +169,14 @@
 				></span>
 			</label>
 			<table class="prose prose-stone prose-td:text-center mt-2 caption-bottom">
-				<caption>This table is shown in CTZ</caption>
+				<caption>This table is shown in CT</caption>
 				<tbody>
-					{#each schedules[pickedKey] as { name, start, end, id } (id)}
+					{#each collection.namedSchedule(pickedKey) as { name, start, end, id } (id)}
 						<tr transition:fly={{ x: 200 }} animate:flip>
-							<th scope="row">{name}</th>
-							<td>{fmt.formatRange(start, end)}</td>
+							<th scope="row">
+								{name}
+							</th>
+							<td>{intlProvider.asRange(start, end)}</td>
 						</tr>
 					{/each}
 				</tbody>
