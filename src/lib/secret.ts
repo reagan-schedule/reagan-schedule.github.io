@@ -5,7 +5,8 @@ let ready = true;
 
 export function setSecretMessage(handler: { message?: string }) {
 	if (ready && Math.random() < messageChance) {
-		handler.message = secretMessages[Math.floor(Math.random() * secretMessages.length)];
+		handler.message =
+			secretMessages[Math.floor(Math.random() * secretMessages.length)];
 		ready = false;
 		setTimeout(() => {
 			delete handler.message;

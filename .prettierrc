@@ -9,12 +9,5 @@
 	"objectWrap": "collapse",
 	"bracketSameLine": false,
 	"svelteAllowShorthand": false,
-	"overrides": [
-		{
-			"files": "*.svelte",
-			"options": {
-				"parser": "svelte"
-			}
-		}
-	]
+	"overrides": [{ "files": "*.svelte", "options": { "parser": "svelte" } }]
 }

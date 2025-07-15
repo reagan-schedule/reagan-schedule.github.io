@@ -12,7 +12,7 @@
 		soon?: { kind: string; name: string; at: Temporal.ZonedDateTime };
 		class?: string;
 	} = $props();
-	
+
 	let intl = getContext<IntlContext>('intl');
 </script>
 

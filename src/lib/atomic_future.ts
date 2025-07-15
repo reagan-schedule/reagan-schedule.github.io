@@ -1,14 +1,14 @@
 import { Temporal } from '@js-temporal/polyfill';
-import { range, type Compare } from './compare';
+export { Temporal };
 
-interface Interval {
+export interface Interval {
 	name: string;
 	start: Temporal.PlainTime;
 	end: Temporal.PlainTime;
 }
 interface LazyItem {
-	firstDay: Temporal.ZonedDateTime;
-	day: Temporal.ZonedDateTime;
+	firstIndex: Temporal.ZonedDateTime;
+	index: Temporal.ZonedDateTime;
 	schedule: Interval[];
 }
 interface Boundary {
@@ -17,7 +17,7 @@ interface Boundary {
 	at: Temporal.ZonedDateTime;
 	reference: Temporal.ZonedDateTime;
 }
-function tr([month, day, year]: [
+export function tr([month, day, year]: [
 	number,
 	number,
 	number,
@@ -28,53 +28,45 @@ export function* futureSchedules<Label extends string>(
 	startDate: Temporal.ZonedDateTime,
 	customSchedule: Label | Interval[] | null,
 	{
-		comparator,
-		collection,
+		resolver,
+		timeSkipService,
 	}: {
-		comparator: Compare<Temporal.PlainDateLike>;
-		collection: {
-			namedSchedule(label: Label): Interval[];
-			getSchedule(day: Temporal.ZonedDateTime): Label | null;
+		resolver: {
+			resolveSchedule(
+				index: Temporal.ZonedDateTime,
+				customSchedule: Label | Interval[] | null
+			): Interval[] | null;
+		};
+		timeSkipService: {
+			applyTimeSkip(index: Temporal.ZonedDateTime): {
+				nextIndex: Temporal.ZonedDateTime;
+				indexModified: boolean;
+			};
 		};
 	}
 ): Generator<LazyItem> {
-	const firstDay = Temporal.ZonedDateTime.from(startDate);
-	let isFirst = true;
+	const firstIndex = Temporal.ZonedDateTime.from(startDate);
 	for (; ; startDate = startDate.add('P1D')) {
-		applyTimeSkip(); // Passed in
-		let schedule =
-			(isFirst && customSchedule) || collection.getSchedule(startDate);
+		const { nextIndex, indexModified } =
+			timeSkipService.applyTimeSkip(startDate);
+		startDate = nextIndex;
+		if (indexModified) {
+			customSchedule = null;
+		}
+		const schedule = resolver.resolveSchedule(startDate, customSchedule);
+		customSchedule = null;
 		if (!schedule) {
 			continue;
 		}
-		if (typeof schedule === 'string') {
-			schedule = collection.namedSchedule(schedule);
-		}
-		yield {
-			firstDay,
-			day: startDate,
-			schedule,
-		};
-		isFirst = false;
-	}
-	function applyTimeSkip() {
-		const timeSkips = [
-			range(tr([5, 23, 2025]), tr([8, 11, 2025])),
-			range(tr([9, 1, 2025]), tr([9, 2, 2025])),
-		];
-		const result = timeSkips.find((range) =>
-			comparator.inRange(startDate, range)
-		);
-		if (!result) {
-			return;
-		}
-		startDate = startDate.with(result.upperBound);
-		isFirst = false;
+		yield { firstIndex, index: startDate, schedule };
+		// if we had customSchedule = null here, we could apply customSchedule to the first Monday after the weekend if today was a Saturday or Sunday.
+		// that would allow very complex and unpredictable behavior.
+		// more importantly, it would break the principle of not being able to change any schedule but todays.
 	}
 }
 export function* applySchedule({
-	firstDay,
-	day,
+	firstIndex: firstDay,
+	index: day,
 	schedule,
 }: LazyItem): Generator<Boundary> {
 	for (const { name, start, end } of schedule) {

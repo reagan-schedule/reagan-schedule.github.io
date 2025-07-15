@@ -1,64 +1,69 @@
 <script lang="ts">
-	import { Temporal } from '@js-temporal/polyfill';
+	const MAX_TIMEOUT = 2147483647;
 	import { flip } from 'svelte/animate';
 	import { fly } from 'svelte/transition';
 	import { setContext, untrack } from 'svelte';
-	import StatusText from '$lib/components/StatusText.svelte';
-	import TwoPager from '$lib/components/TwoPager.svelte';
-	import Fullscreen from '$lib/components/Fullscreen.svelte';
-	import Stage from '$lib/components/Stage.svelte';
 	import type { EventHandler } from 'svelte/elements';
-	import { IntlContext } from '$lib/display';
 	import { browser } from '$app/environment';
 	import { PUBLIC_TZ } from '$env/static/public';
+
+	import {
+		StatusText,
+		TwoPager,
+		Fullscreen,
+		Stage,
+		SecondsClock,
+	} from '$lib/components/';
+
+	import { IntlContext } from '$lib/display';
 	import {
 		ScheduleCollection,
 		type Label,
-	} from '$lib/knows_schedules/schedule';
+		labels,
+		TimeSkipService,
+	} from '$lib/knows_schedules/';
 	import {
 		applySchedule,
 		difference,
 		futureSchedules,
 		upperBound,
+		Temporal,
 	} from '$lib/atomic_future';
-	import { Compare } from '$lib/compare';
-	import { labels } from '$lib/knows_schedules/data';
-	import SecondsClock from '$lib/components/SecondsClock.svelte';
-	import { base } from '$app/paths';
 	const keys = new Map(Object.entries(labels));
-
-	const MAX_TIMEOUT = 2147483647;
 
 	const intlProvider = new IntlContext(
 		browser ? [...navigator.languages] : 'en-US'
 	);
 	setContext('intl', intlProvider);
-	const comp = new Compare<Temporal.PlainDateLike>(Temporal.PlainDate.compare);
-	const collection = new ScheduleCollection();
-	let now = $state(Temporal.Now.zonedDateTimeISO(PUBLIC_TZ));
 
+	let now = $state(Temporal.Now.zonedDateTimeISO(PUBLIC_TZ));
+	let key = $derived(ScheduleCollection.getSchedule(now));
+	let pickedKey = $state(key || 'Regular Schedule');
 	function calculateFuture(key: Label | null) {
 		return futureSchedules(
 			untrack(() => now),
 			key,
-			{ comparator: comp, collection }
+			{ resolver: ScheduleCollection, timeSkipService: TimeSkipService }
 		)
 			.take(1000)
 			.flatMap(applySchedule)
 			.find(upperBound);
 	}
 
-	let key = $derived(collection.getSchedule(now));
-	let pickedKey = $state(key || 'Regular Schedule');
-
 	let soon = $state(calculateFuture(key && pickedKey));
-
 	function recalculate() {
 		soon = calculateFuture(key && pickedKey);
 	}
-
 	function staticRecalculate() {
 		soon = calculateFuture(untrack(() => key && pickedKey));
+	}
+	function thenWakeup() {
+		console.log('visibilitychange', 'document.hidden=', document.hidden);
+		if (document.hidden) {
+			clearTimeout(timeoutId);
+			return;
+		}
+		staticRecalculate();
 	}
 	let timeoutId: number;
 	$effect(recalculate);
@@ -67,32 +72,23 @@
 	// triggers this effect
 	$effect(() => {
 		clearTimeout(timeoutId);
-		timeoutId = setTimeout(
-			staticRecalculate,
-			Math.min(
-				MAX_TIMEOUT,
-				soon ?
-					difference(
-						soon.at,
-						untrack(() => now)
-					)
-				:	0
-			)
-		);
+		let timeout = 0;
+		if (soon) {
+			let currentTime = untrack(() => now);
+			timeout = difference(soon.at, currentTime);
+			timeout = Math.min(timeout, MAX_TIMEOUT);
+		}
+		timeoutId = setTimeout(staticRecalculate, timeout);
 	});
 	setInterval(() => {
 		now = Temporal.Now.zonedDateTimeISO(now.timeZoneId);
 	}, 1000);
 	$inspect(soon);
-	const sleep: EventHandler<Event, Document> = () => {
-		console.log('visibilitychange', 'document.hidden=', document.hidden);
-		if (document.hidden) {
-			clearTimeout(timeoutId);
-			return;
-		}
-		staticRecalculate();
-	};
+	const sleep: EventHandler<Event, Document> = thenWakeup;
 
+	// this was originally to let the user name their periods.
+	// would be very easy to implement.
+	// just makes the table ugly when all of the fields are inputs.
 	// let settings: Record<string, string> = $state(
 	// 	Object.fromEntries(collection.namedSchedule(pickedKey).map(({ name }) => [name, name]))
 	// );
@@ -141,7 +137,11 @@
 			class="h-21 fill-stone-950 text-4xl sm:h-28 sm:text-6xl md:h-56 md:text-9xl"
 			now={now}
 		/>
-		<StatusText class="mt-3 text-md sm:text-lg md:text-3xl" now={now} soon={soon} />
+		<StatusText
+			class="text-md mt-3 sm:text-lg md:text-3xl"
+			now={now}
+			soon={soon}
+		/>
 	</Fullscreen>
 	<Fullscreen
 		class="max-md:flex max-md:flex-col max-md:items-center max-md:justify-center max-md:gap-4 md:grid md:grid-cols-2"
@@ -171,7 +171,7 @@
 			<table class="prose prose-stone prose-td:text-center mt-2 caption-bottom">
 				<caption>This table is shown in CT</caption>
 				<tbody>
-					{#each collection.namedSchedule(pickedKey) as { name, start, end, id } (id)}
+					{#each ScheduleCollection.namedSchedule(pickedKey) as { name, start, end, id } (id)}
 						<tr transition:fly={{ x: 200 }} animate:flip>
 							<th scope="row">
 								{name}

@@ -13,8 +13,8 @@ export class Compare<T> {
 
 	inRange(lower: T, range: Range<T>) {
 		return (
-			this.compare(lower, range.lowerBound) >= 0 &&
-			this.compare(lower, range.upperBound) < 0
+			this.compare(lower, range.lowerBound) >= 0
+			&& this.compare(lower, range.upperBound) < 0
 		);
 	}
 

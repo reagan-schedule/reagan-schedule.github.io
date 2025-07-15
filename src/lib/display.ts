@@ -1,4 +1,4 @@
-import { Intl as _Intl } from '@js-temporal/polyfill';
+import { Intl as IntlEx } from '@js-temporal/polyfill';
 
 abstract class IntlFactory<T, U> extends Map<T, U> {
 	protected readonly locales: string | string[] = [];
@@ -23,10 +23,10 @@ class IntlUnitFactory extends IntlFactory<
 
 class IntlTimeFactory extends IntlFactory<
 	NonNullable<Intl.DateTimeFormatOptions['timeStyle']>,
-	_Intl.DateTimeFormat
+	IntlEx.DateTimeFormat
 > {
 	make(k: NonNullable<Intl.DateTimeFormatOptions['timeStyle']>) {
-		return new _Intl.DateTimeFormat(this.locales, { timeStyle: k });
+		return new IntlEx.DateTimeFormat(this.locales, { timeStyle: k });
 	}
 }
 
@@ -48,10 +48,10 @@ export class IntlContext {
 		this.unitFormats = new IntlUnitFactory(locales);
 		this.listFormats = new IntlListFactory(locales);
 	}
-	withSeconds(time: { toPlainTime(): _Intl.Formattable }) {
+	withSeconds(time: { toPlainTime(): IntlEx.Formattable }) {
 		return this.timeFormats.get('medium').formatToParts(time.toPlainTime());
 	}
-	asRange(startDate: _Intl.Formattable, endDate: _Intl.Formattable) {
+	asRange(startDate: IntlEx.Formattable, endDate: IntlEx.Formattable) {
 		return this.timeFormats.get('short').formatRange(startDate, endDate);
 	}
 	asList(...args: unknown[]) {
